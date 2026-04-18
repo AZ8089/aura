@@ -6,8 +6,8 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from catalog.hardcoded import CATALOG
 from reasoning.k2_stylist import get_picks
+from search.web_search import build_search_context, get_products
 from stt.transcribe import transcribe_audio
 from tts.elevenlabs_tts import generate_speech
 from vision.gemini_parser import parse_image
@@ -46,6 +46,7 @@ async def chat(
     audio: UploadFile | None = File(default=None),
     image: UploadFile | None = File(default=None),
     text: str | None = Form(default=None),
+    max_budget: float | None = Form(default=None),
 ):
     """
     Accepts multipart/form-data with optional:
@@ -80,11 +81,15 @@ async def chat(
             detail="Send at least one of: audio, image, or text.",
         )
 
+    # ── Live catalog via Firecrawl ────────────────────────────────────────────
+    search_ctx = await build_search_context(user_request or None, parsed_image, max_budget=max_budget)
+    catalog = await get_products(search_ctx)
+
     # ── Reasoning ─────────────────────────────────────────────────────────────
     result = await get_picks(
         user_request=user_request or None,
         parsed_image=parsed_image,
-        catalog=CATALOG,
+        catalog=catalog,
     )
     # result = { "picks": [...], "aura_script": "..." }
 
@@ -93,7 +98,7 @@ async def chat(
     audio_url = f"/audio/{audio_path.name}"
 
     # ── Enrich picks with catalog metadata ───────────────────────────────────
-    catalog_by_id = {item["id"]: item for item in CATALOG}
+    catalog_by_id = {item["id"]: item for item in catalog}
     enriched_picks = []
     for pick in result["picks"]:
         item = catalog_by_id.get(pick["id"], {})

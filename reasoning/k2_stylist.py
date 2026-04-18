@@ -40,7 +40,7 @@ Use these definitions when matching items to aesthetics:
   graphic tees, beanies. Gender-neutral silhouettes. Confidence is the accessory.
 
 ## Task
-Given the user's request, their image analysis (if provided), and the catalog below, pick exactly 3 items
+Given the user's request, their image analysis (if provided), and the catalog below, pick exactly 6 items
 that best match their vibe and need. Reason carefully — consider occasion, body proportions, color harmony,
 and aesthetic coherence.
 
@@ -50,9 +50,11 @@ Return a single JSON object with this exact shape:
   "picks": [
     { "id": "<catalog_item_id>", "justification": "<1-2 sentences in Aura's voice>" },
     { "id": "<catalog_item_id>", "justification": "<1-2 sentences in Aura's voice>" },
+    { "id": "<catalog_item_id>", "justification": "<1-2 sentences in Aura's voice>" },
+    { "id": "<catalog_item_id>", "justification": "<1-2 sentences in Aura's voice>" },
     { "id": "<catalog_item_id>", "justification": "<1-2 sentences in Aura's voice>" }
   ],
-  "aura_script": "<A 3-5 sentence spoken monologue in Aura's voice describing the 3 picks and WHY. This is piped directly to TTS — write it as natural speech, no bullet points, no markdown.>"
+  "aura_script": "<A 3-5 sentence spoken monologue in Aura's voice describing the 5 picks and WHY. This is piped directly to TTS — write it as natural speech, no bullet points, no markdown.>"
 }
 
 Return ONLY valid JSON. No markdown fences, no preamble.

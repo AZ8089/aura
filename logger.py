@@ -56,3 +56,55 @@ def log_k2_response(raw_text: str, result: dict) -> None:
         "raw_text": raw_text,
         "result": result,
     })
+
+
+def log_firecrawl_search(query: str, trusted_sites: list[str]) -> None:
+    _write({
+        "event": "firecrawl_search_request",
+        "query": query,
+        "trusted_sites": trusted_sites,
+    })
+
+
+def log_firecrawl_search_results(query: str, urls: list[str]) -> None:
+    _write({
+        "event": "firecrawl_search_results",
+        "query": query,
+        "n_urls": len(urls),
+        "urls": urls,
+    })
+
+
+def log_firecrawl_scrape(url: str) -> None:
+    _write({
+        "event": "firecrawl_scrape_request",
+        "url": url,
+    })
+
+
+def log_firecrawl_scrape_result(url: str, success: bool, markdown_len: int | None = None) -> None:
+    _write({
+        "event": "firecrawl_scrape_result",
+        "url": url,
+        "success": success,
+        "markdown_len": markdown_len,
+    })
+
+
+def log_search_query(query: str, sources: list[str]) -> None:
+    _write({
+        "event": "search_query_synthesized",
+        "query": query,
+        "sources": sources,
+    })
+
+
+def log_web_search_k2(label: str, prompt: str, raw_output: str | None, parsed: dict | None, error: str | None = None) -> None:
+    _write({
+        "event": "web_search_k2",
+        "label": label,
+        "prompt": prompt,
+        "raw_output": raw_output,
+        "parsed": parsed,
+        "error": error,
+    })
