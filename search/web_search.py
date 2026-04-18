@@ -37,6 +37,32 @@ def _domain(site: str) -> str:
     """Strip scheme and trailing slash from a site entry so site: operators work."""
     return re.sub(r"^https?://", "", site).rstrip("/")
 
+
+_DOMAIN_BRAND: dict[str, str] = {
+    "lewkin.com": "Lewkin",
+    "fashionnova.com": "Fashion Nova",
+    "gap.com": "Gap",
+    "amazon.com": "Amazon",
+    "shein.com": "SHEIN",
+    "ssense.com": "SSENSE",
+    "therealreal.com": "The RealReal",
+    "farfetch.com": "Farfetch",
+    "nordstrom.com": "Nordstrom",
+    "aritzia.com": "Aritzia",
+    "revolve.com": "Revolve",
+    "shopbop.com": "Shopbop",
+    "net-a-porter.com": "Net-a-Porter",
+}
+
+
+def _brand_from_url(url: str) -> str | None:
+    """Infer a display brand name from the product URL domain."""
+    for domain, brand in _DOMAIN_BRAND.items():
+        if domain in url:
+            return brand
+    return None
+
+
 # Limit concurrent scrape+extract tasks so we don't hammer rate limits
 _SCRAPE_SEMAPHORE = asyncio.Semaphore(15)
 
@@ -273,6 +299,10 @@ async def _process_url(url: str, idx: int) -> dict | None:
 
     product["material_audit"] = await _audit_material(product.get("material_composition"), url=url)
     product["id"] = f"p{idx:03d}"
+
+    # Fall back to domain name when K2 couldn't find a brand on the page
+    if not product.get("brand"):
+        product["brand"] = _brand_from_url(url)
 
     # Aliases for frontend backward-compatibility
     if product.get("price") is not None:

@@ -307,6 +307,19 @@
         controls
         style="width: 100%; margin-top: 0.75rem; display: none"
       ></audio>
+      <div
+        id="transcript-box"
+        style="
+          display: none;
+          margin-top: 0.6rem;
+          padding: 0.6rem 0.9rem;
+          background: #f9f0ff;
+          border-radius: 10px;
+          font-size: 0.85rem;
+          color: #555;
+          font-style: italic;
+        "
+      ></div>
 
       <!-- Text fallback -->
       <div
@@ -408,6 +421,7 @@
       const recTimer = document.getElementById("rec-timer");
       const waveformFill = document.getElementById("waveform-fill");
       const voicePlayback = document.getElementById("voice-playback");
+      const transcriptBox = document.getElementById("transcript-box");
       const sendBtn = document.getElementById("send-btn");
       const status = document.getElementById("status");
       const audioSection = document.getElementById("audio-section");
@@ -550,6 +564,12 @@
           if (!res.ok) throw new Error(`Server error: ${res.status}`);
           const data = await res.json();
 
+          // Show transcript
+          if (data.transcript) {
+            transcriptBox.textContent = `🎙 "${data.transcript}"`;
+            transcriptBox.style.display = "block";
+          }
+
           // Play Aura's voice response
           if (data.audio_url || data.audio_b64) {
             audioSection.style.display = "block";
@@ -569,7 +589,7 @@
               <img src="${pick.image_url || ""}" alt="${pick.name}" loading="lazy" />
               <div class="pick-card-body">
                 <div class="pick-name">${pick.name}</div>
-                <div class="pick-brand">${pick.brand}</div>
+                <div class="pick-brand">${pick.brand || ""}</div>
                 <div class="pick-price">$${pick.price_usd}</div>
                 <a href="${pick.url}" target="_blank" rel="noopener">Shop →</a>
                 ${pick.justification ? `<div class="pick-justification">"${pick.justification}"</div>` : ""}

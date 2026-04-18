@@ -107,4 +107,4 @@ async def chat(
             "justification": pick.get("justification", ""),
         })
 
-    return JSONResponse({"picks": enriched_picks, "audio_url": audio_url})
+    return JSONResponse({"picks": enriched_picks, "audio_url": audio_url, "transcript": transcript})
