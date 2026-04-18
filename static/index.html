@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aura — Your AI Stylist Bestie</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --pink: #f5a8c9;
+      --lilac: #d4b8e0;
+      --cream: #fdf6f0;
+      --dark: #1a1a1a;
+      --mid: #555;
+      --radius: 16px;
+    }
+
+    body {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      background: var(--cream);
+      color: var(--dark);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem 4rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    header h1 {
+      font-size: 2.8rem;
+      font-weight: 900;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, #e879a0, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    header p {
+      color: var(--mid);
+      font-size: 1rem;
+      margin-top: 0.4rem;
+    }
+
+    .card {
+      background: white;
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+      width: 100%;
+      max-width: 640px;
+      margin-bottom: 1.5rem;
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--mid);
+      margin-bottom: 1rem;
+    }
+
+    /* Camera */
+    #camera-preview {
+      width: 100%;
+      border-radius: 12px;
+      background: #000;
+      aspect-ratio: 4/3;
+      object-fit: cover;
+    }
+
+    #photo-canvas { display: none; }
+
+    #photo-preview {
+      width: 100%;
+      border-radius: 12px;
+      display: none;
+      margin-top: 0.75rem;
+      border: 2px solid var(--pink);
+    }
+
+    /* Voice */
+    #waveform-bar {
+      height: 4px;
+      background: #eee;
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 0.75rem 0;
+    }
+
+    #waveform-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #e879a0, #a855f7);
+      transition: width 0.1s;
+    }
+
+    #rec-timer {
+      font-size: 0.85rem;
+      color: var(--mid);
+      margin-bottom: 0.75rem;
+      min-height: 1.2em;
+    }
+
+    /* Buttons */
+    .btn-row {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+
+    button {
+      padding: 0.6rem 1.2rem;
+      border-radius: 999px;
+      border: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    button:active { transform: scale(0.96); }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #e879a0, #a855f7);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: #f0f0f0;
+      color: var(--dark);
+    }
+
+    .btn-danger {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    /* Send button */
+    #send-btn {
+      width: 100%;
+      max-width: 640px;
+      padding: 1rem;
+      font-size: 1.1rem;
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, #e879a0, #a855f7);
+      color: white;
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    #send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Status */
+    #status {
+      text-align: center;
+      font-size: 0.9rem;
+      color: var(--mid);
+      min-height: 1.4em;
+      margin: 0.75rem 0;
+    }
+
+    /* Audio playback */
+    #audio-section { display: none; }
+
+    #aura-audio {
+      width: 100%;
+      border-radius: 8px;
+      margin-top: 0.5rem;
+    }
+
+    /* Picks grid */
+    #picks-section { display: none; }
+
+    .picks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .pick-card {
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #eee;
+      transition: transform 0.2s;
+    }
+
+    .pick-card:hover { transform: translateY(-4px); }
+
+    .pick-card img {
+      width: 100%;
+      aspect-ratio: 3/4;
+      object-fit: cover;
+    }
+
+    .pick-card-body {
+      padding: 0.75rem;
+    }
+
+    .pick-card-body .pick-name {
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-bottom: 0.2rem;
+    }
+
+    .pick-card-body .pick-brand {
+      font-size: 0.75rem;
+      color: var(--mid);
+    }
+
+    .pick-card-body .pick-price {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #a855f7;
+      margin: 0.3rem 0;
+    }
+
+    .pick-card-body a {
+      font-size: 0.75rem;
+      color: #e879a0;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .pick-justification {
+      font-size: 0.8rem;
+      color: var(--mid);
+      margin-top: 0.4rem;
+      font-style: italic;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>✦ Aura</h1>
+    <p>your AI stylist bestie. she will NOT hold back.</p>
+  </header>
+
+  <!-- Camera Section -->
+  <div class="card">
+    <h2>📸 Step 1 — Show Her What You're Working With</h2>
+    <video id="camera-preview" autoplay playsinline muted></video>
+    <canvas id="photo-canvas"></canvas>
+    <img id="photo-preview" alt="Captured photo" />
+    <div class="btn-row">
+      <button class="btn-primary" id="start-camera-btn">Start Camera</button>
+      <button class="btn-secondary" id="take-photo-btn" disabled>Take Photo</button>
+      <button class="btn-danger" id="retake-btn" style="display:none">Retake</button>
+    </div>
+  </div>
+
+  <!-- Voice Section -->
+  <div class="card">
+    <h2>🎙 Step 2 — Tell Aura What You Need</h2>
+    <div id="rec-timer"></div>
+    <div id="waveform-bar"><div id="waveform-fill"></div></div>
+    <div class="btn-row">
+      <button class="btn-primary" id="rec-start-btn">Record Voice Note</button>
+      <button class="btn-danger" id="rec-stop-btn" disabled>Stop</button>
+    </div>
+    <audio id="voice-playback" controls style="width:100%;margin-top:0.75rem;display:none"></audio>
+  </div>
+
+  <!-- Send -->
+  <div id="status"></div>
+  <button id="send-btn" disabled>✦ Ask Aura</button>
+
+  <!-- Audio Response -->
+  <div class="card" id="audio-section">
+    <h2>🔊 Aura's Take</h2>
+    <audio id="aura-audio" controls autoplay></audio>
+  </div>
+
+  <!-- Picks Grid -->
+  <div class="card" id="picks-section">
+    <h2>🛍 The Picks</h2>
+    <div class="picks-grid" id="picks-grid"></div>
+  </div>
+
+  <script>
+    // ── State ──────────────────────────────────────────────────────────────
+    let photoBlob = null;
+    let audioBlob = null;
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let cameraStream = null;
+    let recTimerInterval = null;
+    let recSeconds = 0;
+
+    // ── Element refs ───────────────────────────────────────────────────────
+    const cameraPreview  = document.getElementById('camera-preview');
+    const photoCanvas    = document.getElementById('photo-canvas');
+    const photoPreview   = document.getElementById('photo-preview');
+    const startCameraBtn = document.getElementById('start-camera-btn');
+    const takePhotoBtn   = document.getElementById('take-photo-btn');
+    const retakeBtn      = document.getElementById('retake-btn');
+    const recStartBtn    = document.getElementById('rec-start-btn');
+    const recStopBtn     = document.getElementById('rec-stop-btn');
+    const recTimer       = document.getElementById('rec-timer');
+    const waveformFill   = document.getElementById('waveform-fill');
+    const voicePlayback  = document.getElementById('voice-playback');
+    const sendBtn        = document.getElementById('send-btn');
+    const status         = document.getElementById('status');
+    const audioSection   = document.getElementById('audio-section');
+    const auraAudio      = document.getElementById('aura-audio');
+    const picksSection   = document.getElementById('picks-section');
+    const picksGrid      = document.getElementById('picks-grid');
+
+    // ── Camera ─────────────────────────────────────────────────────────────
+    startCameraBtn.addEventListener('click', async () => {
+      try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+        cameraPreview.srcObject = cameraStream;
+        takePhotoBtn.disabled = false;
+        startCameraBtn.disabled = true;
+        setStatus('Camera ready — strike a pose 📷');
+      } catch (err) {
+        setStatus('Camera access denied. Make sure you\'re on HTTPS or localhost.');
+        console.error(err);
+      }
+    });
+
+    takePhotoBtn.addEventListener('click', () => {
+      photoCanvas.width  = cameraPreview.videoWidth;
+      photoCanvas.height = cameraPreview.videoHeight;
+      photoCanvas.getContext('2d').drawImage(cameraPreview, 0, 0);
+      photoCanvas.toBlob(blob => {
+        photoBlob = blob;
+        photoPreview.src = URL.createObjectURL(blob);
+        photoPreview.style.display = 'block';
+        retakeBtn.style.display = 'inline-block';
+        takePhotoBtn.style.display = 'none';
+        // stop camera stream to save resources
+        cameraStream.getTracks().forEach(t => t.stop());
+        cameraPreview.style.display = 'none';
+        checkReady();
+        setStatus('Photo locked in ✅');
+      }, 'image/jpeg', 0.92);
+    });
+
+    retakeBtn.addEventListener('click', async () => {
+      photoBlob = null;
+      photoPreview.style.display = 'none';
+      photoPreview.src = '';
+      retakeBtn.style.display = 'none';
+      takePhotoBtn.style.display = 'inline-block';
+      cameraPreview.style.display = 'block';
+      startCameraBtn.disabled = false;
+      takePhotoBtn.disabled = true;
+      checkReady();
+    });
+
+    // ── Voice Recording ────────────────────────────────────────────────────
+    recStartBtn.addEventListener('click', async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        recordedChunks = [];
+
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+          ? 'audio/webm;codecs=opus'
+          : 'audio/webm';
+
+        mediaRecorder = new MediaRecorder(stream, { mimeType });
+        mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+        mediaRecorder.onstop = () => {
+          audioBlob = new Blob(recordedChunks, { type: mimeType });
+          voicePlayback.src = URL.createObjectURL(audioBlob);
+          voicePlayback.style.display = 'block';
+          stream.getTracks().forEach(t => t.stop());
+          clearInterval(recTimerInterval);
+          waveformFill.style.width = '0%';
+          checkReady();
+          setStatus('Voice note saved 🎙');
+        };
+
+        mediaRecorder.start(100);
+        recStartBtn.disabled = true;
+        recStopBtn.disabled = false;
+        recSeconds = 0;
+        recTimer.textContent = '⏺ 0s';
+        recTimerInterval = setInterval(() => {
+          recSeconds++;
+          recTimer.textContent = `⏺ ${recSeconds}s`;
+          waveformFill.style.width = `${Math.min(100, recSeconds * 2)}%`;
+        }, 1000);
+        setStatus('Recording... talk to Aura like she\'s your bestie 💬');
+      } catch (err) {
+        setStatus('Mic access denied.');
+        console.error(err);
+      }
+    });
+
+    recStopBtn.addEventListener('click', () => {
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+        recStopBtn.disabled = true;
+        recStartBtn.disabled = false;
+      }
+    });
+
+    // ── Submit ─────────────────────────────────────────────────────────────
+    function checkReady() {
+      // at least one of photo or audio must be present
+      sendBtn.disabled = !(photoBlob || audioBlob);
+    }
+
+    sendBtn.addEventListener('click', async () => {
+      if (!photoBlob && !audioBlob) return;
+
+      sendBtn.disabled = true;
+      setStatus('Sending to Aura... she\'s cooking 🍳');
+
+      const form = new FormData();
+      if (audioBlob) form.append('audio', audioBlob, 'voice.webm');
+      if (photoBlob) form.append('image', photoBlob, 'photo.jpg');
+
+      try {
+        const res = await fetch('/chat', { method: 'POST', body: form });
+        if (!res.ok) throw new Error(`Server error: ${res.status}`);
+        const data = await res.json();
+
+        // Play Aura's voice response
+        if (data.audio_url || data.audio_b64) {
+          audioSection.style.display = 'block';
+          auraAudio.src = data.audio_url
+            ? data.audio_url
+            : `data:audio/mpeg;base64,${data.audio_b64}`;
+        }
+
+        // Render picks
+        if (data.picks && data.picks.length) {
+          picksSection.style.display = 'block';
+          picksGrid.innerHTML = '';
+          data.picks.forEach(pick => {
+            const card = document.createElement('div');
+            card.className = 'pick-card';
+            card.innerHTML = `
+              <img src="${pick.image_url || ''}" alt="${pick.name}" loading="lazy" />
+              <div class="pick-card-body">
+                <div class="pick-name">${pick.name}</div>
+                <div class="pick-brand">${pick.brand}</div>
+                <div class="pick-price">$${pick.price_usd}</div>
+                <a href="${pick.url}" target="_blank" rel="noopener">Shop →</a>
+                ${pick.justification ? `<div class="pick-justification">"${pick.justification}"</div>` : ''}
+              </div>
+            `;
+            picksGrid.appendChild(card);
+          });
+        }
+
+        setStatus('Aura has spoken. 💅');
+      } catch (err) {
+        setStatus(`Something went wrong: ${err.message}`);
+        console.error(err);
+        sendBtn.disabled = false;
+      }
+    });
+
+    // ── Helpers ────────────────────────────────────────────────────────────
+    function setStatus(msg) {
+      status.textContent = msg;
+    }
+  </script>
+</body>
+</html>
