@@ -4,17 +4,14 @@ Accepts raw image bytes (JPEG).
 Returns a structured dict describing the garment or the person.
 """
 
-import base64
 import json
+import re
 
-import httpx
+from google import genai
+from google.genai import types
 
 from config import GEMINI_API_KEY
-
-GEMINI_API_URL = (
-    "https://generativelanguage.googleapis.com/v1beta/models/"
-    "gemini-1.5-flash:generateContent"
-)
+from logger import log_gemini_request, log_gemini_response
 
 SYSTEM_PROMPT = """
 You are a fashion vision AI. Analyze the provided image and return a JSON object.
@@ -50,41 +47,23 @@ async def parse_image(image_bytes: bytes) -> dict:
     """
     Send image bytes to Gemini multimodal and return parsed JSON.
     """
-    image_b64 = base64.b64encode(image_bytes).decode("utf-8")
+    log_gemini_request(len(image_bytes), SYSTEM_PROMPT)
+    client = genai.Client(api_key=GEMINI_API_KEY)
 
-    payload = {
-        "contents": [
-            {
-                "parts": [
-                    {"text": SYSTEM_PROMPT},
-                    {
-                        "inline_data": {
-                            "mime_type": "image/jpeg",
-                            "data": image_b64,
-                        }
-                    },
-                ]
-            }
+    response = client.models.generate_content(
+        model="gemini-3-flash-preview",
+        contents=[
+            SYSTEM_PROMPT,
+            types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
         ],
-        "generationConfig": {
-            "temperature": 0.2,
-            "maxOutputTokens": 512,
-        },
-    }
-
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        response = await client.post(
-            GEMINI_API_URL,
-            params={"key": GEMINI_API_KEY},
-            json=payload,
-        )
-
-    response.raise_for_status()
-    data = response.json()
-
-    raw_text: str = (
-        data["candidates"][0]["content"]["parts"][0]["text"].strip()
+        config=types.GenerateContentConfig(
+            temperature=0.2,
+            max_output_tokens=512,
+        ),
     )
+
+    raw_text: str = response.text.strip()
+    print("[gemini_parser] raw response:", raw_text)
 
     # Strip markdown code fences if Gemini adds them despite instructions
     if raw_text.startswith("```"):
@@ -93,5 +72,9 @@ async def parse_image(image_bytes: bytes) -> dict:
             raw_text = raw_text[4:]
         raw_text = raw_text.strip()
 
+    # Remove trailing commas before } or ] (common Gemini quirk)
+    raw_text = re.sub(r",\s*([}\]])", r"\1", raw_text)
+
     parsed: dict = json.loads(raw_text)
+    log_gemini_response(raw_text, parsed)
     return parsed

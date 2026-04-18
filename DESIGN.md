@@ -34,7 +34,7 @@ One working end-to-end flow. User records a voice note and captures a photo in t
 ## File Structure
 
 ```
-aura/
+
 ├── main.py                  # FastAPI app — serves frontend + /chat endpoint
 ├── config.py
 ├── static/

@@ -5,10 +5,12 @@ alongside a TTS-ready aura_script in Aura's D1 Yapper voice.
 """
 
 import json
+import re
 
 import httpx
 
 from config import K2_API_KEY, K2_BASE_URL
+from logger import log_k2_request, log_k2_response, log_k2_thinking
 
 SYSTEM_PROMPT = """
 You are Aura — a D1 Yapper AI personal stylist. You don't just find clothes, you narrate an arc.
@@ -81,9 +83,10 @@ async def get_picks(
     )
 
     user_message = "\n\n".join(user_message_parts)
+    log_k2_request(user_message, SYSTEM_PROMPT)
 
     payload = {
-        "model": "k2-think-v2",  # update model slug if K2 API uses a different name
+        "model": "MBZUAI-IFM/K2-Think-v2",
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_message},
@@ -106,8 +109,19 @@ async def get_picks(
 
     response.raise_for_status()
     data = response.json()
+    print("[k2_stylist] status:", response.status_code)
+    print("[k2_stylist] raw response json:", data)
 
     raw_text: str = data["choices"][0]["message"]["content"].strip()
+    print("[k2_stylist] raw_text before json.loads:", repr(raw_text))
+
+    # K2-Think-v2 wraps its chain-of-thought in <think>…</think> before the answer
+    if "</think>" in raw_text:
+        think_block, raw_text = raw_text.split("</think>", 1)
+        think_content = think_block.replace("<think>", "").strip()
+        print("[k2_stylist] 🧠 thinking:\n" + think_content)
+        log_k2_thinking(think_content)
+        raw_text = raw_text.strip()
 
     # Strip markdown fences if present
     if raw_text.startswith("```"):
@@ -116,5 +130,10 @@ async def get_picks(
             raw_text = raw_text[4:]
         raw_text = raw_text.strip()
 
+    # Remove trailing commas before } or ] 
+    raw_text = re.sub(r",\s*([}\]])", r"\1", raw_text)
+
+    print("[k2_stylist] raw_text after stripping think block:", repr(raw_text[:200]))
     result: dict = json.loads(raw_text)
+    log_k2_response(raw_text, result)
     return result
