@@ -1,4 +1,13 @@
 /* src/index.css */
+
+*, *::before, *::after {
+  font-family: 'Bubblegum Sans', cursive !important;
+}
+
+body {
+  font-family: 'Bubblegum Sans', cursive;
+}
+
 .locker-canvas {
   width: 1920px;
   height: 1080px;

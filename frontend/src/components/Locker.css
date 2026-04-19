@@ -14,7 +14,7 @@
   height: 900px;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 0 50px rgba(0,0,0,0.5);
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
   /* Remove the transform line from here! */
 }
 
@@ -56,6 +56,31 @@
   height: auto;
   max-width: none;
   object-fit: contain;
+  z-index: 50;
+  pointer-events: auto !important;
+  cursor: pointer;
+  filter:
+    drop-shadow(0 0 12px rgba(232, 121, 160, 0.55)) drop-shadow(0 0 28px rgba(168, 85, 247, 0.3));
+  transition: filter 0.3s ease, opacity 0.2s;
+}
+
+.aura-header.cooking {
+  animation: aura-glow-pulse 1.2s ease-in-out infinite;
+  cursor: not-allowed;
+}
+
+@keyframes aura-glow-pulse {
+
+  0%,
+  100% {
+    filter:
+      drop-shadow(0 0 18px rgba(232, 121, 160, 0.75)) drop-shadow(0 0 50px rgba(168, 85, 247, 0.55)) drop-shadow(0 0 80px rgba(232, 121, 160, 0.3));
+  }
+
+  50% {
+    filter:
+      drop-shadow(0 0 35px rgba(232, 121, 160, 1)) drop-shadow(0 0 80px rgba(168, 85, 247, 0.85)) drop-shadow(0 0 120px rgba(232, 121, 160, 0.5));
+  }
 }
 
 .keychain-zone {
@@ -106,7 +131,7 @@
   border: 2px solid #ddd;
   border-radius: 8px;
   font-size: 14px;
-  font-family: inherit;
+  font-family: 'Bubblegum Sans', cursive;
   transition: all 0.2s;
 }
 
@@ -178,9 +203,12 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 4px 12px rgba(209, 84, 110, 0.6), inset 0 1px 3px rgba(255, 255, 255, 0.2);
   }
+
   50% {
     box-shadow: 0 6px 20px rgba(209, 84, 110, 0.9), inset 0 1px 3px rgba(255, 255, 255, 0.3);
   }
@@ -194,10 +222,15 @@
 }
 
 @keyframes blink {
-  0%, 50%, 100% {
+
+  0%,
+  50%,
+  100% {
     opacity: 1;
   }
-  25%, 75% {
+
+  25%,
+  75% {
     opacity: 0.5;
   }
 }
@@ -205,11 +238,15 @@
 /* Add this for the camera on the first page */
 .camera-wrapper {
   position: absolute;
-  bottom: 50px;       /* Anchored to the bottom */
-  right: 50px;        /* Anchored to the right */
-  width: 350px;       /* Slightly smaller than the results version */
+  bottom: 50px;
+  /* Anchored to the bottom */
+  right: 50px;
+  /* Anchored to the right */
+  width: 350px;
+  /* Slightly smaller than the results version */
   z-index: 10;
-  pointer-events: all !important; /* Ensures you can click the shutter button */
+  pointer-events: all !important;
+  /* Ensures you can click the shutter button */
 }
 
 /* If your camera image is inside that wrapper */
@@ -233,19 +270,21 @@
 /* RESULTS PAGE Tweaks */
 .results-notebook {
   position: absolute;
-  top: 55% !important;   /* Pushed down slightly */
+  top: 55% !important;
+  /* Pushed down slightly */
   left: 50% !important;
-  transform: translate(-50%, -50%) !important; 
-  width: 950px !important; /* Made it way bigger */
+  transform: translate(-50%, -50%) !important;
+  width: 950px !important;
+  /* Made it way bigger */
   z-index: 5;
 }
 
 .results-camera {
   position: absolute;
   /* We use top/left instead of bottom/left to be safer */
-  top: 500px !important;  
-  left: 10px !important; 
-  width: 500px !important; 
+  top: 500px !important;
+  left: 10px !important;
+  width: 500px !important;
   z-index: 20;
 }
 
@@ -284,7 +323,10 @@
 }
 
 /* Make sure your interactive zones are actually clickable */
-.bottom-input-section, .camera-wrapper, .capture-button, .voice-section {
+.bottom-input-section,
+.camera-wrapper,
+.capture-button,
+.voice-section {
   z-index: 999 !important;
   pointer-events: all !important;
 }
@@ -293,15 +335,16 @@
 .locker-canvas {
   pointer-events: none;
 }
-.locker-canvas > * {
+
+.locker-canvas>* {
   pointer-events: all;
 }
 
 /* ── Knot Connect Section ─────────────────────────────────────────────────── */
 .knot-section {
   position: absolute;
-  top: 20px;
-  left: 220px;
+  top: 590px;
+  right: 100px;
   z-index: 50;
   display: flex;
   flex-direction: column;
@@ -309,7 +352,7 @@
   background: rgba(255, 255, 255, 0.92);
   border-radius: 14px;
   padding: 12px 16px;
-  box-shadow: 0 4px 18px rgba(0,0,0,0.12);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
   max-width: 280px;
 }
 
@@ -337,8 +380,14 @@
   transition: opacity 0.15s, transform 0.1s;
 }
 
-.btn-knot-connect:active { transform: scale(0.96); }
-.btn-knot-connect:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-knot-connect:active {
+  transform: scale(0.96);
+}
+
+.btn-knot-connect:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
 
 .btn-knot-disconnect {
   padding: 0.45rem 1rem;
@@ -351,14 +400,21 @@
   color: #b91c1c;
   transition: opacity 0.15s, transform 0.1s;
 }
-.btn-knot-disconnect:active { transform: scale(0.96); }
-.btn-knot-disconnect:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-knot-disconnect:active {
+  transform: scale(0.96);
+}
+
+.btn-knot-disconnect:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
 
 /* ── Waveform Bar ─────────────────────────────────────────────────────────── */
 .waveform-bar {
   width: 100px;
   height: 4px;
-  background: rgba(255,255,255,0.3);
+  background: rgba(255, 255, 255, 0.3);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -391,7 +447,7 @@
   font-style: italic;
   z-index: 60;
   line-height: 1.5;
-  box-shadow: 0 2px 10px rgba(168,85,247,0.15);
+  box-shadow: 0 2px 10px rgba(168, 85, 247, 0.15);
 }
 
 /* ── Subscription Banner ─────────────────────────────────────────────────── */
@@ -405,7 +461,7 @@
   border-radius: 14px;
   border-left: 4px solid #f59e0b;
   padding: 1rem 1.25rem;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
 }
 
 .sub-banner h3 {
@@ -429,10 +485,21 @@
   border-bottom: 1px solid #f0f0f0;
   gap: 0.5rem;
 }
-.sub-item:last-child { border-bottom: none; }
 
-.sub-name { font-weight: 600; flex: 1; }
-.sub-cost { color: #555; font-size: 0.8rem; margin-right: 0.5rem; }
+.sub-item:last-child {
+  border-bottom: none;
+}
+
+.sub-name {
+  font-weight: 600;
+  flex: 1;
+}
+
+.sub-cost {
+  color: #555;
+  font-size: 0.8rem;
+  margin-right: 0.5rem;
+}
 
 .btn-danger-sm {
   padding: 0.28rem 0.75rem;
@@ -446,7 +513,11 @@
   transition: opacity 0.15s;
   white-space: nowrap;
 }
-.btn-danger-sm:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-danger-sm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 /* ── Inline Purchase Section ─────────────────────────────────────────────── */
 .purchase-section {
@@ -458,7 +529,7 @@
   background: white;
   border-radius: 16px;
   padding: 1.25rem 1.5rem;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
 }
 
 .purchase-section h3 {
@@ -487,7 +558,10 @@
   padding: 0.35rem 0;
   border-bottom: 1px solid #f0f0f0;
 }
-.purchase-list li:last-child { border-bottom: none; }
+
+.purchase-list li:last-child {
+  border-bottom: none;
+}
 
 .purchase-total {
   font-weight: 700;
@@ -514,8 +588,15 @@
   color: white;
   transition: opacity 0.15s, transform 0.1s;
 }
-.btn-purchase-confirm:active { transform: scale(0.97); }
-.btn-purchase-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-purchase-confirm:active {
+  transform: scale(0.97);
+}
+
+.btn-purchase-confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 .btn-purchase-skip {
   flex: 1;
@@ -529,8 +610,15 @@
   color: #1a1a1a;
   transition: opacity 0.15s, transform 0.1s;
 }
-.btn-purchase-skip:active { transform: scale(0.97); }
-.btn-purchase-skip:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-purchase-skip:active {
+  transform: scale(0.97);
+}
+
+.btn-purchase-skip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 /* ── Purchase Confirmed Message ──────────────────────────────────────────── */
 .purchase-confirmed-msg {
@@ -558,6 +646,15 @@
   color: white;
   background: #16a34a;
 }
-.purchase-badge.pending  { background: #f59e0b; }
-.purchase-badge.failed   { background: #b91c1c; }
-.purchase-badge.skipped  { background: #888; }
+
+.purchase-badge.pending {
+  background: #f59e0b;
+}
+
+.purchase-badge.failed {
+  background: #b91c1c;
+}
+
+.purchase-badge.skipped {
+  background: #888;
+}
