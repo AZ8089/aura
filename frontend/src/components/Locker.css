@@ -296,3 +296,268 @@
 .locker-canvas > * {
   pointer-events: all;
 }
+
+/* ── Knot Connect Section ─────────────────────────────────────────────────── */
+.knot-section {
+  position: absolute;
+  top: 20px;
+  left: 220px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 14px;
+  padding: 12px 16px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.12);
+  max-width: 280px;
+}
+
+.knot-status {
+  font-size: 0.82rem;
+  color: #555;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.knot-status.connected {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.btn-knot-connect {
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  border: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: linear-gradient(135deg, #e879a0, #a855f7);
+  color: white;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+.btn-knot-connect:active { transform: scale(0.96); }
+.btn-knot-connect:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-knot-disconnect {
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  border: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: #fee2e2;
+  color: #b91c1c;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.btn-knot-disconnect:active { transform: scale(0.96); }
+.btn-knot-disconnect:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Waveform Bar ─────────────────────────────────────────────────────────── */
+.waveform-bar {
+  width: 100px;
+  height: 4px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.waveform-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #e879a0, #a855f7);
+  transition: width 0.1s;
+}
+
+.rec-timer {
+  font-size: 0.78rem;
+  color: #d1546e;
+  font-weight: 700;
+  min-height: 1.2em;
+}
+
+/* ── Transcript Box (Results page) ───────────────────────────────────────── */
+.transcript-box {
+  position: absolute;
+  bottom: 240px;
+  left: 220px;
+  right: 420px;
+  background: rgba(249, 240, 255, 0.95);
+  border-radius: 10px;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.85rem;
+  color: #555;
+  font-style: italic;
+  z-index: 60;
+  line-height: 1.5;
+  box-shadow: 0 2px 10px rgba(168,85,247,0.15);
+}
+
+/* ── Subscription Banner ─────────────────────────────────────────────────── */
+.sub-banner {
+  position: absolute;
+  top: 20px;
+  left: 220px;
+  right: 340px;
+  z-index: 60;
+  background: white;
+  border-radius: 14px;
+  border-left: 4px solid #f59e0b;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+}
+
+.sub-banner h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+}
+
+.sub-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.sub-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid #f0f0f0;
+  gap: 0.5rem;
+}
+.sub-item:last-child { border-bottom: none; }
+
+.sub-name { font-weight: 600; flex: 1; }
+.sub-cost { color: #555; font-size: 0.8rem; margin-right: 0.5rem; }
+
+.btn-danger-sm {
+  padding: 0.28rem 0.75rem;
+  border-radius: 999px;
+  border: none;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: #fee2e2;
+  color: #b91c1c;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+.btn-danger-sm:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Inline Purchase Section ─────────────────────────────────────────────── */
+.purchase-section {
+  position: absolute;
+  bottom: 30px;
+  left: 220px;
+  right: 120px;
+  z-index: 60;
+  background: white;
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+}
+
+.purchase-section h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 0.4rem;
+}
+
+.purchase-desc {
+  font-size: 0.85rem;
+  color: #555;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.purchase-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.75rem;
+}
+
+.purchase-list li {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.88rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+.purchase-list li:last-child { border-bottom: none; }
+
+.purchase-total {
+  font-weight: 700;
+  font-size: 1rem;
+  text-align: right;
+  margin-bottom: 0.75rem;
+  color: #a855f7;
+}
+
+.purchase-btn-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.btn-purchase-confirm {
+  flex: 1;
+  padding: 0.7rem 1rem;
+  border-radius: 999px;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: linear-gradient(135deg, #e879a0, #a855f7);
+  color: white;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.btn-purchase-confirm:active { transform: scale(0.97); }
+.btn-purchase-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-purchase-skip {
+  flex: 1;
+  padding: 0.7rem 1rem;
+  border-radius: 999px;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: #f0f0f0;
+  color: #1a1a1a;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.btn-purchase-skip:active { transform: scale(0.97); }
+.btn-purchase-skip:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Purchase Confirmed Message ──────────────────────────────────────────── */
+.purchase-confirmed-msg {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(22, 163, 74, 0.92);
+  color: white;
+  padding: 10px 24px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  z-index: 70;
+  white-space: nowrap;
+}
+
+/* ── Purchase Status Badges ───────────────────────────────────────────────── */
+.purchase-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  color: white;
+  background: #16a34a;
+}
+.purchase-badge.pending  { background: #f59e0b; }
+.purchase-badge.failed   { background: #b91c1c; }
+.purchase-badge.skipped  { background: #888; }

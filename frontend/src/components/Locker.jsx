@@ -22,6 +22,15 @@ const Locker = ({ onResults }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Recording timer & waveform
+  const [recSeconds, setRecSeconds] = useState(0);
+  const [waveformPct, setWaveformPct] = useState(0);
+  const recTimerRef = useRef(null);
+
+  // Knot state
+  const [knotConnected, setKnotConnected] = useState(false);
+  const [knotUserId, setKnotUserId] = useState(null);
+
   const audioBlobRef = useRef(null);
   const photoBlobRef = useRef(null);
   const mediaRecorderRef = useRef(null);
@@ -47,46 +56,84 @@ const Locker = ({ onResults }) => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Toggle voice recording on/off
-  const toggleRecording = async () => {
-    if (isRecording) {
-      if (
-        mediaRecorderRef.current &&
-        mediaRecorderRef.current.state !== "inactive"
-      ) {
-        mediaRecorderRef.current.stop();
-      }
-      setIsRecording(false);
-    } else {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
+  // ── Knot helpers ──────────────────────────────────────────────────────────
+  function getOrCreateUserId() {
+    let id = localStorage.getItem("aura_knot_user_id");
+    if (!id) {
+      id = "aura-" + crypto.randomUUID();
+      localStorage.setItem("aura_knot_user_id", id);
+    }
+    return id;
+  }
+
+  const handleKnotConnect = () => {
+    const userId = getOrCreateUserId();
+    setKnotUserId(userId);
+    setKnotConnected(true);
+  };
+
+  const handleKnotDisconnect = () => {
+    setKnotConnected(false);
+    setKnotUserId(null);
+  };
+
+  // ── Voice recording ───────────────────────────────────────────────────────
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recordedChunksRef.current = [];
+
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : "audio/webm";
+
+      const recorder = new MediaRecorder(stream, { mimeType });
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) recordedChunksRef.current.push(e.data);
+      };
+      recorder.onstop = () => {
+        audioBlobRef.current = new Blob(recordedChunksRef.current, {
+          type: mimeType,
         });
-        recordedChunksRef.current = [];
+        setHasAudio(true);
+        stream.getTracks().forEach((t) => t.stop());
+        clearInterval(recTimerRef.current);
+        setWaveformPct(0);
+      };
 
-        const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-          ? "audio/webm;codecs=opus"
-          : "audio/webm";
+      recorder.start(100);
+      mediaRecorderRef.current = recorder;
+      setIsRecording(true);
+      setRecSeconds(0);
 
-        const recorder = new MediaRecorder(stream, { mimeType });
-        recorder.ondataavailable = (e) => {
-          if (e.data.size > 0) recordedChunksRef.current.push(e.data);
-        };
-        recorder.onstop = () => {
-          audioBlobRef.current = new Blob(recordedChunksRef.current, {
-            type: mimeType,
-          });
-          setHasAudio(true);
-          stream.getTracks().forEach((t) => t.stop());
-        };
+      let secs = 0;
+      recTimerRef.current = setInterval(() => {
+        secs++;
+        setRecSeconds(secs);
+        setWaveformPct(Math.min(100, secs * 2));
+      }, 1000);
+    } catch (err) {
+      console.error("[Locker] mic access denied:", err);
+      setError("Microphone access denied.");
+    }
+  };
 
-        recorder.start(100);
-        mediaRecorderRef.current = recorder;
-        setIsRecording(true);
-      } catch (err) {
-        console.error("[Locker] mic access denied:", err);
-        setError("Microphone access denied.");
-      }
+  const stopRecording = () => {
+    if (
+      mediaRecorderRef.current &&
+      mediaRecorderRef.current.state !== "inactive"
+    ) {
+      mediaRecorderRef.current.stop();
+    }
+    setIsRecording(false);
+    clearInterval(recTimerRef.current);
+  };
+
+  const toggleRecording = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
     }
   };
 
@@ -109,6 +156,7 @@ const Locker = ({ onResults }) => {
     ) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
+      clearInterval(recTimerRef.current);
       await new Promise((r) => setTimeout(r, 200));
     }
 
@@ -122,6 +170,7 @@ const Locker = ({ onResults }) => {
       form.append("audio", audioBlobRef.current, "voice.webm");
     if (styleRequest.trim()) form.append("text", styleRequest.trim());
     if (budget.trim()) form.append("max_budget", budget.trim());
+    if (knotConnected && knotUserId) form.append("knot_token", knotUserId);
 
     try {
       const res = await fetch(`${API_BASE}/chat`, {
@@ -134,13 +183,15 @@ const Locker = ({ onResults }) => {
       const photoUrl = photoBlobRef.current
         ? URL.createObjectURL(photoBlobRef.current)
         : null;
-      onResults({ ...data, _photoUrl: photoUrl });
+      onResults({ ...data, _photoUrl: photoUrl, _knotUserId: knotConnected ? knotUserId : null });
     } catch (err) {
       console.error("[Locker] submit error:", err);
       setError(err.message || "Something went wrong. Try again.");
       setIsLoading(false);
     }
   };
+
+  const canSubmit = hasPhoto || hasAudio || styleRequest.trim().length > 0;
 
   return (
     <div className="viewport-wrapper">
@@ -156,6 +207,65 @@ const Locker = ({ onResults }) => {
 
         <div className="keychain-zone">
           <Keychain />
+        </div>
+
+        {/* ── Knot connect section ─────────────────────────────────────── */}
+        <div className="knot-section">
+          {!knotConnected ? (
+            <>
+              <p className="knot-status">
+                Connect your Amazon account so Aura can personalise picks 🛒
+              </p>
+              <button
+                className="btn-knot-connect"
+                onClick={handleKnotConnect}
+                disabled={isLoading}
+              >
+                🔗 Connect Amazon
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="knot-status connected">
+                ✅ Amazon connected — picks will be personalised to you
+              </p>
+              <button
+                className="btn-knot-disconnect"
+                onClick={handleKnotDisconnect}
+                disabled={isLoading}
+              >
+                Disconnect
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* ── Voice section with waveform ──────────────────────────────── */}
+        <div className="voice-section">
+          {/* Waveform bar */}
+          <div className="waveform-bar">
+            <div
+              className="waveform-fill"
+              style={{ width: `${waveformPct}%` }}
+            />
+          </div>
+          {isRecording && (
+            <span className="rec-timer">⏺ {recSeconds}s</span>
+          )}
+
+          <button
+            className={`voice-btn ${isRecording ? "recording" : ""}`}
+            onClick={toggleRecording}
+            disabled={isLoading}
+          />
+          {isRecording && (
+            <span className="recording-indicator">Recording...</span>
+          )}
+          {hasAudio && !isRecording && (
+            <span className="recording-indicator" style={{ color: "#4caf50" }}>
+              Voice ready ✓
+            </span>
+          )}
         </div>
 
         <div className="bottom-input-section">
@@ -181,44 +291,32 @@ const Locker = ({ onResults }) => {
           </div>
         </div>
 
-        <div className="voice-section">
-          <button
-            className={`voice-btn ${isRecording ? "recording" : ""}`}
-            onClick={toggleRecording}
-            disabled={isLoading}
-          />
-          {isRecording && (
-            <span className="recording-indicator">Recording...</span>
-          )}
-          {hasAudio && !isRecording && (
-            <span className="recording-indicator" style={{ color: "#4caf50" }}>
-              Voice ready ✓
-            </span>
-          )}
-        </div>
-
-        {/* Ask Aura submit button — beside the keychain (right side) */}
+        {/* Ask Aura submit button */}
         <button
           onClick={handleSubmit}
-          disabled={isLoading}
+          disabled={isLoading || !canSubmit}
           style={{
             position: "absolute",
             top: "680px",
             right: "100px",
             padding: "14px 48px",
-            background: isLoading
-              ? "#888"
-              : "linear-gradient(135deg, #e879a0, #a855f7)",
-            color: isLoading ? "#ccc" : "white",
+            background:
+              isLoading || !canSubmit
+                ? "#888"
+                : "linear-gradient(135deg, #e879a0, #a855f7)",
+            color: isLoading || !canSubmit ? "#ccc" : "white",
             border: "none",
             borderRadius: "30px",
             fontWeight: "bold",
             fontSize: "16px",
-            cursor: isLoading ? "not-allowed" : "pointer",
-            boxShadow: isLoading ? "none" : "0 4px 16px rgba(168,85,247,0.45)",
+            cursor: isLoading || !canSubmit ? "not-allowed" : "pointer",
+            boxShadow:
+              isLoading || !canSubmit
+                ? "none"
+                : "0 4px 16px rgba(168,85,247,0.45)",
             zIndex: 100,
             whiteSpace: "nowrap",
-            opacity: isLoading ? 0.55 : 1,
+            opacity: isLoading || !canSubmit ? 0.55 : 1,
             transition: "opacity 0.2s, background 0.2s",
             pointerEvents: "auto",
           }}

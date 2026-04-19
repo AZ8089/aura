@@ -26,14 +26,46 @@ const STRIP_FRAMES = [
   { top: "670px", height: "150px" },
 ];
 
+// Purchase badge status → label
+function badgeLabel(status) {
+  if (status === "pending") return "⏳ Ordered";
+  if (status === "purchased") return "✓ Copped";
+  if (status === "failed") return "✗ Failed";
+  if (status === "skipped") return "→ Link to shop";
+  return null;
+}
+
 const Results = ({ data, onBack }) => {
   const [activeIdx, setActiveIdx] = useState(0);
   const audioRef = useRef(null);
 
+  // Purchase flow state
+  const [purchaseStatus, setPurchaseStatus] = useState({}); // { item_id: { status } }
+  const [purchaseConfirmed, setPurchaseConfirmed] = useState(false);
+  const [purchaseLoading, setPurchaseLoading] = useState(false);
+  const [purchaseSkipped, setPurchaseSkipped] = useState(false);
+
+  // Subscription banner state
+  const [cancelledSubs, setCancelledSubs] = useState({}); // { sub_id: true }
+  const [cancellingId, setCancellingId] = useState(null);
+
   const picks = data?.picks || [];
   const audioUrl = data?.audio_url || null;
   const photoUrl = data?._photoUrl || null;
+  const knotUserId = data?._knotUserId || null;
+  const transcript = data?.transcript || null;
+  const activeSubscriptions = data?.active_subscriptions || [];
   const pick = picks[activeIdx] || null;
+
+  // Picks that can be auto-purchased (have an amazon_asin) — only shown when Knot connected
+  const purchasablePicks = picks.filter((p) => p.amazon_asin);
+  const showPurchaseSection =
+    knotUserId && purchasablePicks.length > 0 && !purchaseSkipped && !purchaseConfirmed;
+
+  const purchaseTotal = purchasablePicks.reduce(
+    (sum, p) => sum + (p.price_usd || 0),
+    0
+  );
 
   // Entrance animations — unchanged
   useEffect(() => {
@@ -68,6 +100,49 @@ const Results = ({ data, onBack }) => {
       ease: "outQuad",
     });
   }, [activeIdx]);
+
+  // ── Inline purchase confirm ───────────────────────────────────────────────
+  const handlePurchaseConfirm = async () => {
+    setPurchaseLoading(true);
+    const form = new FormData();
+    if (knotUserId) form.append("knot_token", knotUserId);
+    form.append("execute_purchase", "true");
+
+    try {
+      const res = await fetch(`${API_BASE}/chat`, { method: "POST", body: form });
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      const result = await res.json();
+
+      if (result.purchase_status) {
+        const statusMap = {};
+        result.purchase_status.forEach((s) => {
+          statusMap[s.item_id] = s;
+        });
+        setPurchaseStatus(statusMap);
+      }
+      setPurchaseConfirmed(true);
+    } catch (err) {
+      console.error("[Results] purchase error:", err);
+    } finally {
+      setPurchaseLoading(false);
+    }
+  };
+
+  // ── Cancel subscription ───────────────────────────────────────────────────
+  const handleCancelSub = async (subId) => {
+    setCancellingId(subId);
+    try {
+      const res = await fetch(`${API_BASE}/cancel-subscription/${subId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error(`${res.status}`);
+      setCancelledSubs((prev) => ({ ...prev, [subId]: true }));
+    } catch (err) {
+      console.error("[Results] cancel sub error:", err);
+    } finally {
+      setCancellingId(null);
+    }
+  };
 
   return (
     <div className="viewport-wrapper">
@@ -170,6 +245,17 @@ const Results = ({ data, onBack }) => {
                 )}
               </div>
             )}
+
+            {/* Purchase status badge for active pick */}
+            {purchaseStatus[pick.id] && (
+              <div
+                className={`purchase-badge ${purchaseStatus[pick.id].status}`}
+                style={{ alignSelf: "flex-start" }}
+              >
+                {badgeLabel(purchaseStatus[pick.id].status)}
+              </div>
+            )}
+
             <a
               href={pick.url || pick.product_url}
               target="_blank"
@@ -325,6 +411,102 @@ const Results = ({ data, onBack }) => {
               zIndex: 50,
             }}
           />
+        )}
+
+        {/* ── Transcript box ─────────────────────────────────────────────── */}
+        {transcript && (
+          <div className="transcript-box">🎙 &ldquo;{transcript}&rdquo;</div>
+        )}
+
+        {/* ── Subscription banner ────────────────────────────────────────── */}
+        {activeSubscriptions.length > 0 && (
+          <div className="sub-banner">
+            <h3>👀 Aura noticed something…</h3>
+            <div className="sub-list">
+              {activeSubscriptions.map((sub) =>
+                cancelledSubs[sub.id] ? (
+                  <div key={sub.id} className="sub-item">
+                    <span style={{ color: "#16a34a", fontSize: "0.85rem" }}>
+                      ✓ Cancelled
+                    </span>
+                  </div>
+                ) : (
+                  <div key={sub.id} className="sub-item">
+                    <span className="sub-name">{sub.name}</span>
+                    {sub.monthly_cost_usd != null && (
+                      <span className="sub-cost">
+                        ${sub.monthly_cost_usd}/mo
+                      </span>
+                    )}
+                    {sub.is_cancellable ? (
+                      <button
+                        className="btn-danger-sm"
+                        onClick={() => handleCancelSub(sub.id)}
+                        disabled={cancellingId === sub.id}
+                      >
+                        {cancellingId === sub.id ? "Cancelling…" : "Cancel"}
+                      </button>
+                    ) : (
+                      <span style={{ fontSize: "0.75rem", color: "#555" }}>
+                        Not cancellable
+                      </span>
+                    )}
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── Inline purchase section ────────────────────────────────────── */}
+        {showPurchaseSection && (
+          <div className="purchase-section">
+            <h3>🛒 Cop the Look</h3>
+            <p className="purchase-desc">
+              Aura will place these orders on your Amazon account automatically.
+              Real money, real clothes.
+            </p>
+            <ul className="purchase-list">
+              {purchasablePicks.map((p) => (
+                <li key={p.id || p.name}>
+                  <span>{p.name}</span>
+                  <span>${p.price_usd}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="purchase-total">
+              Total: ${purchaseTotal.toFixed(2)}
+            </div>
+            <div className="purchase-btn-row">
+              <button
+                className="btn-purchase-confirm"
+                onClick={handlePurchaseConfirm}
+                disabled={purchaseLoading}
+              >
+                {purchaseLoading ? "Placing order…" : "✦ Yes, cop it all"}
+              </button>
+              <button
+                className="btn-purchase-skip"
+                onClick={() => setPurchaseSkipped(true)}
+                disabled={purchaseLoading}
+              >
+                Nah, just browse
+              </button>
+            </div>
+          </div>
+        )}
+
+        {purchaseConfirmed && (
+          <div className="purchase-confirmed-msg">
+            {Object.values(purchaseStatus).filter((s) => s.status === "pending")
+              .length > 0
+              ? `Aura copped ${
+                  Object.values(purchaseStatus).filter(
+                    (s) => s.status === "pending"
+                  ).length
+                } item(s) for you ✓`
+              : "Order submitted — check your Amazon for confirmation ✓"}
+          </div>
         )}
 
         <button className="result-asset retake-btn" onClick={onBack}>
