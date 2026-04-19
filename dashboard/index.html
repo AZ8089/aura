@@ -449,7 +449,42 @@
               }
             : { i: "❌", c: "red", l: "Scrape failed", s: domain(e.url) };
         if (t === "web_search_k2" || t === "web_search_gemini") {
-          const ok = e.parsed && !e.error;
+          const lbl = (e.label || "").toLowerCase();
+          // Intent extraction
+          if (lbl === "intent") {
+            const p = e.parsed || {};
+            const parts = [p.garment_type, p.vibe, p.colors?.join(",")].filter(
+              Boolean,
+            );
+            return {
+              i: "🔎",
+              c: "blue",
+              l: "Intent extracted",
+              s: parts.join(" · ") || "see detail",
+            };
+          }
+          // Query synthesis
+          if (lbl === "query_synthesis") {
+            return {
+              i: "✍️",
+              c: "purple",
+              l: "Query synthesized",
+              s: `"${(e.raw_output || "").trim().slice(0, 60)}"`,
+            };
+          }
+          // Material audit
+          if (lbl.startsWith("audit:")) {
+            const p = e.parsed || {};
+            const meets = p.meets_50pct_cotton;
+            return {
+              i: meets ? "🌿" : "🧪",
+              c: meets ? "green" : "orange",
+              l: "Material audit",
+              s: p.reasoning?.slice(0, 70) || "",
+            };
+          }
+          // Product extraction
+          const ok = e.parsed && !e.error && e.parsed.name;
           const p = e.parsed || {};
           return ok
             ? {
@@ -462,7 +497,7 @@
                 i: "❌",
                 c: "red",
                 l: "Extraction failed",
-                s: (e.error || "").slice(0, 70),
+                s: (e.error || "null result").slice(0, 70),
               };
         }
         if (t === "k2_request")
@@ -703,18 +738,66 @@
               });
             break;
           case "web_search_k2":
-          case "web_search_gemini":
-            if (e.parsed) {
-              html += df("name", e.parsed.name);
-              html += df("brand", e.parsed.brand);
-              html += df("price", e.parsed.price ? `$${e.parsed.price}` : null);
-              html += df("material", e.parsed.material_composition);
-              html += df("sizes", (e.parsed.available_sizes || []).join(", "));
-              if (e.parsed.image_url)
-                html += `<div class="d-field"><div class="d-key">IMAGE</div><img class="img-prev" src="${esc(e.parsed.image_url)}" onerror="this.style.display='none'"></div>`;
+          case "web_search_gemini": {
+            const lbl = (e.label || "").toLowerCase();
+            if (lbl === "intent") {
+              // Show the intent prompt + extracted intent fields
+              html += df("label", e.label);
+              if (e.prompt)
+                html += `<div class="d-field"><div class="d-key">PROMPT SENT TO K2</div><div class="d-val">${esc(e.prompt)}</div></div>`;
+              if (e.parsed)
+                Object.entries(e.parsed).forEach(
+                  ([k, v]) =>
+                    (html += df(k, Array.isArray(v) ? v.join(", ") : v)),
+                );
+              if (e.error) html += df("error", e.error, true);
+            } else if (lbl === "query_synthesis") {
+              // Show the synthesis prompt + the synthesized query output
+              html += df("label", e.label);
+              if (e.prompt)
+                html += `<div class="d-field"><div class="d-key">SYNTHESIS PROMPT</div><div class="d-val">${esc(e.prompt)}</div></div>`;
+              if (e.raw_output)
+                html += `<div class="d-field"><div class="d-key">SYNTHESIZED QUERY</div><div class="d-val" style="font-size:15px;font-weight:bold;color:var(--purple)">${esc(e.raw_output.trim())}</div></div>`;
+            } else if (lbl.startsWith("audit:")) {
+              html += df("url", lbl.replace("audit:", ""));
+              if (e.prompt)
+                html += `<div class="d-field"><div class="d-key">MATERIAL TEXT</div><div class="d-val">${esc(e.prompt.split("MATERIAL TEXT:").pop()?.trim() || e.prompt)}</div></div>`;
+              if (e.parsed) {
+                html += df(
+                  "meets_50pct_cotton",
+                  String(e.parsed.meets_50pct_cotton),
+                );
+                html += df("reasoning", e.parsed.reasoning);
+                if (e.parsed.materials)
+                  html += df(
+                    "materials",
+                    e.parsed.materials
+                      .map((m) => `${m.percentage}% ${m.type}`)
+                      .join(", "),
+                  );
+              }
+            } else {
+              // Product extraction
+              html += df("label", e.label);
+              if (e.parsed) {
+                html += df("name", e.parsed.name);
+                html += df("brand", e.parsed.brand);
+                html += df(
+                  "price",
+                  e.parsed.price ? `$${e.parsed.price}` : null,
+                );
+                html += df("material", e.parsed.material_composition);
+                html += df(
+                  "sizes",
+                  (e.parsed.available_sizes || []).join(", "),
+                );
+                if (e.parsed.image_url)
+                  html += `<div class="d-field"><div class="d-key">IMAGE</div><img class="img-prev" src="${esc(e.parsed.image_url)}" onerror="this.style.display='none'"></div>`;
+              }
+              if (e.error) html += df("error", e.error, true);
             }
-            if (e.error) html += df("error", e.error, true);
             break;
+          }
           case "k2_thinking":
             html += `<div class="d-field"><div class="d-key">THINKING</div><div class="thinking-box">${esc(e.content || "")}</div></div>`;
             break;
