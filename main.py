@@ -139,13 +139,6 @@ async def chat(
         purchase_history = await get_purchase_history(knot_token)
         print(f"[main] purchase_history keys: {list(purchase_history.keys())}")
 
-    # ── Reasoning ─────────────────────────────────────────────────────────────
-    result = await get_picks(
-        user_request=user_request or None,
-        parsed_image=parsed_image,
-        catalog=CATALOG,
-        purchase_history=purchase_history,
-    )
     # ── Live catalog via Firecrawl ────────────────────────────────────────────
     search_ctx = await build_search_context(user_request or None, parsed_image, max_budget=max_budget)
     catalog = await get_products(search_ctx)
@@ -155,6 +148,7 @@ async def chat(
         user_request=user_request or None,
         parsed_image=parsed_image,
         catalog=catalog,
+        purchase_history=purchase_history,
     )
     # initial_result = { "picks": [...], "aura_script": "..." }
 

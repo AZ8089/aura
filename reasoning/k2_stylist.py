@@ -58,7 +58,6 @@ Return a single JSON object with this exact shape:
     { "id": "<catalog_item_id>", "justification": "<1-2 sentences in Aura's voice>" },
     { "id": "<catalog_item_id>", "justification": "<1-2 sentences in Aura's voice>" },
     { "id": "<catalog_item_id>", "justification": "<1-2 sentences in Aura's voice>" },
-    { "id": "<catalog_item_id>", "justification": "<1-2 sentences in Aura's voice>" },
     { "id": "<catalog_item_id>", "justification": "<1-2 sentences in Aura's voice>" }
   ],
   "aura_script": "<A 3-5 sentence spoken monologue in Aura's voice describing the 5 picks and WHY. This is piped directly to TTS — write it as natural speech, no bullet points, no markdown.>"
