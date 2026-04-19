@@ -1,18 +1,18 @@
-import { useState } from 'react';
-import Locker from './components/Locker';
-import Results from './components/Results'; // You'll make this next
-import './index.css';
+import { useState } from "react";
+import Locker from "./components/Locker";
+import Results from "./components/Results";
+import "./index.css";
 
 function App() {
-  const [showResults, setShowResults] = useState(false);
+  // null = input page; populated object = results page
+  const [results, setResults] = useState(null);
 
   return (
     <div className="App">
-      {!showResults ? (
-        // Pass the "Trigger" function to the Locker
-        <Locker onNavigate={() => setShowResults(true)} />
+      {!results ? (
+        <Locker onResults={(data) => setResults(data)} />
       ) : (
-        <Results onBack={() => setShowResults(false)} />
+        <Results data={results} onBack={() => setResults(null)} />
       )}
     </div>
   );
