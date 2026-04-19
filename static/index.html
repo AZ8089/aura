@@ -281,49 +281,20 @@
       background: var(--red);
     }
 
-    /* ── Purchase Confirmation Modal ──────────────────────────────────────── */
-    #confirm-modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
-      z-index: 999;
-      align-items: center;
-      justify-content: center;
-    }
-
-    #confirm-modal.open {
-      display: flex;
-    }
-
-    .modal-box {
-      background: white;
-      border-radius: var(--radius);
-      padding: 2rem;
-      max-width: 480px;
-      width: 90%;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-    }
-
-    .modal-box h3 {
-      font-size: 1.2rem;
-      font-weight: 800;
-      margin-bottom: 0.5rem;
-    }
-
-    .modal-box p {
+    /* ── Inline Purchase Section ──────────────────────────────────────────── */
+    .purchase-desc {
       font-size: 0.9rem;
       color: var(--mid);
       margin-bottom: 1.25rem;
       line-height: 1.5;
     }
 
-    .modal-picks-list {
+    .purchase-list {
       list-style: none;
       margin-bottom: 1.5rem;
     }
 
-    .modal-picks-list li {
+    .purchase-list li {
       display: flex;
       justify-content: space-between;
       font-size: 0.9rem;
@@ -331,22 +302,17 @@
       border-bottom: 1px solid #f0f0f0;
     }
 
-    .modal-picks-list li:last-child { border-bottom: none; }
+    .purchase-list li:last-child { border-bottom: none; }
 
-    .modal-total {
+    .purchase-total {
       font-weight: 700;
       font-size: 1rem;
       text-align: right;
-      margin-bottom: 1.5rem;
+      margin-bottom: 0.5rem;
       color: #a855f7;
     }
 
-    .modal-actions {
-      display: flex;
-      gap: 0.75rem;
-    }
-
-    .modal-actions button { flex: 1; padding: 0.75rem; font-size: 1rem; }
+    #purchase-section .btn-row button { flex: 1; padding: 0.75rem; font-size: 1rem; }
 
     /* ── Subscription Banner ──────────────────────────────────────────────── */
     #sub-banner {
@@ -403,8 +369,6 @@
     </p>
     <div class="btn-row">
       <button class="btn-primary" id="knot-connect-btn">Connect Amazon</button>
-      <button class="btn-success" id="knot-demo-btn">✦ Use Demo Account</button>
-      <button class="btn-secondary" id="knot-skip-btn">Skip for now</button>
       <button class="btn-danger" id="knot-disconnect-btn" style="display:none">Disconnect</button>
     </div>
   </div>
@@ -456,17 +420,15 @@
     <div class="picks-grid" id="picks-grid"></div>
   </div>
 
-  <!-- ── Purchase Confirmation Modal ───────────────────────────────────── -->
-  <div id="confirm-modal">
-    <div class="modal-box">
-      <h3>Aura's about to cop these for you 🛒</h3>
-      <p>She'll place the order on your Amazon account automatically. Real money, real clothes.</p>
-      <ul class="modal-picks-list" id="modal-picks-list"></ul>
-      <div class="modal-total" id="modal-total"></div>
-      <div class="modal-actions">
-        <button class="btn-danger" id="modal-cancel-btn">Nah, just browse</button>
-        <button class="btn-primary" id="modal-confirm-btn">✦ Yes, cop it all</button>
-      </div>
+  <!-- ── Inline Purchase Section (shown after picks if Knot connected) ── -->
+  <div class="card" id="purchase-section" style="display:none">
+    <h2>🛒 Cop the Look</h2>
+    <p class="purchase-desc">Aura will place these orders on your Amazon account automatically. Real money, real clothes.</p>
+    <ul class="purchase-list" id="purchase-list"></ul>
+    <div class="purchase-total" id="purchase-total"></div>
+    <div class="btn-row" style="margin-top:1rem">
+      <button class="btn-primary" id="purchase-confirm-btn">✦ Yes, cop it all</button>
+      <button class="btn-secondary" id="purchase-skip-btn">Nah, just browse</button>
     </div>
   </div>
 
@@ -482,17 +444,15 @@
 
     // Knot state
     let knotUserId = null;          // external_user_id — generated once, persisted in localStorage
-    let knotConnected = false;       // true after SDK onSuccess
+    let knotConnected = false;       // true after connecting
 
-    // Pending picks (for purchase confirmation modal)
+    // Pending picks (for inline purchase section)
     let pendingPicks = [];
 
     // ── Element refs ──────────────────────────────────────────────────────
     const knotSection       = document.getElementById('knot-section');
     const knotStatusText    = document.getElementById('knot-status-text');
     const knotConnectBtn    = document.getElementById('knot-connect-btn');
-    const knotDemoBtn       = document.getElementById('knot-demo-btn');
-    const knotSkipBtn       = document.getElementById('knot-skip-btn');
     const knotDisconnectBtn = document.getElementById('knot-disconnect-btn');
 
     const cameraPreview    = document.getElementById('camera-preview');
@@ -512,13 +472,13 @@
     const auraAudio        = document.getElementById('aura-audio');
     const picksSection     = document.getElementById('picks-section');
     const picksGrid        = document.getElementById('picks-grid');
-    const subBanner        = document.getElementById('sub-banner');
-    const subList          = document.getElementById('sub-list');
-    const confirmModal     = document.getElementById('confirm-modal');
-    const modalPicksList   = document.getElementById('modal-picks-list');
-    const modalTotal       = document.getElementById('modal-total');
-    const modalCancelBtn   = document.getElementById('modal-cancel-btn');
-    const modalConfirmBtn  = document.getElementById('modal-confirm-btn');
+    const subBanner           = document.getElementById('sub-banner');
+    const subList             = document.getElementById('sub-list');
+    const purchaseSection     = document.getElementById('purchase-section');
+    const purchaseList        = document.getElementById('purchase-list');
+    const purchaseTotal       = document.getElementById('purchase-total');
+    const purchaseConfirmBtn  = document.getElementById('purchase-confirm-btn');
+    const purchaseSkipBtn     = document.getElementById('purchase-skip-btn');
 
     // ── Knot user ID (generate once, keep in localStorage) ───────────────
     function getOrCreateUserId() {
@@ -531,58 +491,8 @@
     }
 
     // ── Knot: Connect Accounts ────────────────────────────────────────────
-    knotConnectBtn.addEventListener('click', async () => {
-      knotUserId = getOrCreateUserId();
-      knotConnectBtn.disabled = true;
-      knotConnectBtn.textContent = 'Connecting…';
-
-      try {
-        const resp = await fetch('/knot/session', {
-          method: 'POST',
-          body: new URLSearchParams({ external_user_id: knotUserId }),
-        });
-
-        if (!resp.ok) {
-          const err = await resp.json().catch(() => ({}));
-          throw new Error(err.detail || `Session error ${resp.status}`);
-        }
-
-        const { session, client_id, environment } = await resp.json();
-
-        const KnotapiJS = window.KnotapiJS.default;
-        const knotapi = new KnotapiJS();
-
-        knotapi.open({
-          sessionId: session,
-          clientId: client_id,
-          environment: environment,
-          entryPoint: 'aura-onboarding',
-          useCategories: true,
-          useSearch: true,
-          onSuccess: (details) => {
-            setKnotConnected(knotUserId);
-            knotSkipBtn.textContent = 'Re-connect';
-          },
-          onError: (errorCode, message) => {
-            console.error('[Knot] error', errorCode, message);
-            setStatus(`Knot error: ${errorCode}. You can still use Aura without it.`);
-            knotConnectBtn.disabled = false;
-            knotConnectBtn.textContent = 'Connect Amazon';
-          },
-          onExit: () => {
-            if (!knotConnected) {
-              knotConnectBtn.disabled = false;
-              knotConnectBtn.textContent = 'Connect Amazon';
-            }
-          },
-        });
-
-      } catch (err) {
-        console.error('[Knot] session error', err);
-        setStatus(`Couldn't start Knot session: ${err.message}`);
-        knotConnectBtn.disabled = false;
-        knotConnectBtn.textContent = 'Connect Amazon';
-      }
+    knotConnectBtn.addEventListener('click', () => {
+      setKnotConnected('aura-test-user-001');
     });
 
     function setKnotConnected(userId) {
@@ -591,26 +501,15 @@
       knotStatusText.textContent = '✅ Connected! Aura can see your purchase history.';
       knotStatusText.className = 'knot-status connected';
       knotConnectBtn.style.display = 'none';
-      knotDemoBtn.style.display = 'none';
       knotDisconnectBtn.style.display = 'inline-block';
       setStatus('Amazon connected — picks will be personalised to you 🛒');
     }
-
-    knotDemoBtn.addEventListener('click', () => {
-      setKnotConnected('aura-test-user-001');
-    });
-
-    knotSkipBtn.addEventListener('click', () => {
-      knotSection.style.display = 'none';
-      setStatus('Skipped account connection — picks will be vibes-based only ✨');
-    });
 
     knotDisconnectBtn.addEventListener('click', () => {
       knotConnected = false;
       knotDisconnectBtn.style.display = 'none';
       knotConnectBtn.style.display = 'inline-block';
       knotConnectBtn.disabled = false;
-      knotDemoBtn.style.display = 'inline-block';
       knotStatusText.textContent = 'Connect your Amazon account so Aura can see your taste and cop items automatically.';
       knotStatusText.className = 'knot-status';
       setStatus('Amazon disconnected — picks will be vibes-based only ✨');
@@ -631,20 +530,32 @@
     });
 
     takePhotoBtn.addEventListener('click', () => {
-      photoCanvas.width  = cameraPreview.videoWidth;
-      photoCanvas.height = cameraPreview.videoHeight;
-      photoCanvas.getContext('2d').drawImage(cameraPreview, 0, 0);
-      photoCanvas.toBlob(blob => {
-        photoBlob = blob;
-        photoPreview.src = URL.createObjectURL(blob);
-        photoPreview.style.display = 'block';
-        retakeBtn.style.display = 'inline-block';
-        takePhotoBtn.style.display = 'none';
-        cameraStream.getTracks().forEach(t => t.stop());
-        cameraPreview.style.display = 'none';
-        checkReady();
-        setStatus('Photo locked in ✅');
-      }, 'image/jpeg', 0.92);
+      takePhotoBtn.disabled = true;
+      let count = 3;
+      setStatus(`📸 ${count}…`);
+      const countdown = setInterval(() => {
+        count--;
+        if (count > 0) {
+          setStatus(`📸 ${count}…`);
+        } else {
+          clearInterval(countdown);
+          setStatus('Smile! 😄');
+          photoCanvas.width  = cameraPreview.videoWidth;
+          photoCanvas.height = cameraPreview.videoHeight;
+          photoCanvas.getContext('2d').drawImage(cameraPreview, 0, 0);
+          photoCanvas.toBlob(blob => {
+            photoBlob = blob;
+            photoPreview.src = URL.createObjectURL(blob);
+            photoPreview.style.display = 'block';
+            retakeBtn.style.display = 'inline-block';
+            takePhotoBtn.style.display = 'none';
+            cameraStream.getTracks().forEach(t => t.stop());
+            cameraPreview.style.display = 'none';
+            checkReady();
+            setStatus('Photo locked in ✅');
+          }, 'image/jpeg', 0.92);
+        }
+      }, 1000);
     });
 
     retakeBtn.addEventListener('click', async () => {
@@ -745,11 +656,11 @@
             picksGrid.appendChild(card);
           });
 
-          // If Knot connected and any pick has an ASIN, offer to purchase
+          // If Knot connected and any pick has an ASIN, show inline purchase section
           const purchasablePicks = data.picks.filter(p => p.amazon_asin);
           if (knotConnected && purchasablePicks.length > 0) {
             pendingPicks = data.picks;
-            setTimeout(() => openConfirmModal(data.picks), 1500);
+            renderPurchaseSection(data.picks);
           }
         }
 
@@ -795,30 +706,32 @@
       return card;
     }
 
-    // ── Purchase confirmation modal ───────────────────────────────────────
-    function openConfirmModal(picks) {
-      modalPicksList.innerHTML = '';
+    // ── Inline purchase section ───────────────────────────────────────────
+    function renderPurchaseSection(picks) {
+      purchaseList.innerHTML = '';
       let total = 0;
       picks.forEach(pick => {
         if (!pick.amazon_asin) return;
         total += pick.price_usd;
         const li = document.createElement('li');
         li.innerHTML = `<span>${pick.name}</span><span>$${pick.price_usd}</span>`;
-        modalPicksList.appendChild(li);
+        purchaseList.appendChild(li);
       });
-      modalTotal.textContent = `Total: $${total.toFixed(2)}`;
-      confirmModal.classList.add('open');
+      purchaseTotal.textContent = `Total: $${total.toFixed(2)}`;
+      purchaseSection.style.display = 'block';
+      purchaseConfirmBtn.disabled = false;
+      purchaseConfirmBtn.textContent = '✦ Yes, cop it all';
     }
 
-    modalCancelBtn.addEventListener('click', () => {
-      confirmModal.classList.remove('open');
+    purchaseSkipBtn.addEventListener('click', () => {
+      purchaseSection.style.display = 'none';
       setStatus('No purchase made — items are just picks for now 🛍');
     });
 
-    modalConfirmBtn.addEventListener('click', async () => {
-      confirmModal.classList.remove('open');
+    purchaseConfirmBtn.addEventListener('click', async () => {
       setStatus('Aura is placing your order… 🛒');
-      modalConfirmBtn.disabled = true;
+      purchaseConfirmBtn.disabled = true;
+      purchaseConfirmBtn.textContent = 'Placing order…';
 
       const form = new FormData();
       if (audioBlob) form.append('audio', audioBlob, 'voice.webm');
@@ -843,6 +756,7 @@
           });
         }
 
+        purchaseSection.style.display = 'none';
         const purchasedCount = (data.purchase_status || []).filter(s => s.status === 'pending').length;
         setStatus(purchasedCount > 0
           ? `Aura copped ${purchasedCount} item${purchasedCount > 1 ? 's' : ''} for you ✓`
@@ -850,8 +764,8 @@
       } catch (err) {
         setStatus(`Purchase failed: ${err.message}`);
         console.error(err);
-      } finally {
-        modalConfirmBtn.disabled = false;
+        purchaseConfirmBtn.disabled = false;
+        purchaseConfirmBtn.textContent = '✦ Yes, cop it all';
       }
     });
 
