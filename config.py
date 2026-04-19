@@ -24,5 +24,10 @@ TRUSTED_SITES: list[str] = os.environ.get(
     "ssense.com,therealreal.com,farfetch.com,nordstrom.com",
 ).split(",")
 
+# Phase 3 review pipeline toggle.
+# Set TO_REVIEW=true to enable review crawling + sizing analysis.
+# Defaults to disabled (false / missing) because it adds significant latency.
+TO_REVIEW: bool = os.environ.get("TO_REVIEW", "false").strip().lower() == "true"
+
 # Misc
 AUDIO_OUTPUT_DIR: str = os.environ.get("AUDIO_OUTPUT_DIR", "/tmp/aura_audio")
