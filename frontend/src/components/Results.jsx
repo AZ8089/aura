@@ -1,0 +1,338 @@
+import { useEffect, useRef, useState } from "react";
+import { animate, stagger } from "animejs";
+import "./Locker.css";
+
+import resultsBg from "../assets/result_page.png";
+import cameraResults from "../assets/camera_results.png";
+import auraResultsLogo from "../assets/aura_results_final.png";
+import notebook from "../assets/notebook.png";
+import photostrip from "../assets/photostrip.png";
+
+const API_BASE = import.meta.env.VITE_API_BASE || "";
+
+// Try-on images keyed by product index (0-3).
+// Replace null values with real URLs once available.
+// If product IDs are stable, key by id instead of index.
+const TRY_ON_IMAGES = { 0: null, 1: null, 2: null, 3: null };
+
+// Vertical positions of each photo-strip frame, relative to the strip container.
+// These align with the 4 frame slots printed in photostrip.png — adjust if needed.
+// top = distance from top of the photostrip container to each frame slot
+// Calibrate these against photostrip.png visually
+const STRIP_FRAMES = [
+  { top: "165px", height: "150px" },
+  { top: "332px", height: "150px" },
+  { top: "500px", height: "150px" },
+  { top: "670px", height: "150px" },
+];
+
+const Results = ({ data, onBack }) => {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const audioRef = useRef(null);
+
+  const picks = data?.picks || [];
+  const audioUrl = data?.audio_url || null;
+  const photoUrl = data?._photoUrl || null;
+  const pick = picks[activeIdx] || null;
+
+  // Entrance animations — unchanged
+  useEffect(() => {
+    animate(".result-asset", {
+      opacity: [0, 1],
+      scale: [0.9, 1],
+      rotate: (el) => {
+        if (el.classList.contains("results-photostrip")) return -5;
+        if (el.classList.contains("results-notebook")) return 3;
+        return 0;
+      },
+      delay: stagger(150),
+      ease: "outBack",
+    });
+  }, []);
+
+  // Auto-play Aura's voice note on load
+  useEffect(() => {
+    if (audioRef.current && audioUrl) {
+      audioRef.current
+        .play()
+        .catch((err) => console.warn("[Results] autoplay blocked:", err));
+    }
+  }, [audioUrl]);
+
+  // Fade notebook content on active pick change
+  useEffect(() => {
+    animate(".notebook-content", {
+      opacity: [0, 1],
+      translateY: [8, 0],
+      duration: 280,
+      ease: "outQuad",
+    });
+  }, [activeIdx]);
+
+  return (
+    <div className="viewport-wrapper">
+      <div className="locker-canvas">
+        <img src={resultsBg} className="locker-bg" alt="bg" />
+
+        {/* Top Logo */}
+        <img
+          src={auraResultsLogo}
+          className="result-asset results-logo"
+          alt="logo"
+        />
+
+        {/* Notebook — static image layer */}
+        <img
+          src={notebook}
+          className="result-asset results-notebook"
+          alt="notebook"
+        />
+
+        {/* Notebook content — overlaid on the right page of the notebook PNG.
+            Adjust top/left/width/height to match the right-page area in notebook.png. */}
+        {pick && (
+          <div
+            className="notebook-content"
+            style={{
+              position: "absolute",
+              top: "200px",
+              left: "780px",
+              width: "375px",
+              height: "570px",
+              zIndex: 10,
+              overflow: "hidden",
+              padding: "18px 20px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "10px",
+              transform: "rotate(-5deg)",
+              transformOrigin: "top left",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "17px",
+                fontWeight: "bold",
+                fontFamily: "Georgia, serif",
+                color: "#1a1a1a",
+                lineHeight: 1.3,
+              }}
+            >
+              {pick.name}
+            </div>
+            <div
+              style={{
+                fontSize: "13px",
+                color: "#666",
+                fontFamily: "Georgia, serif",
+              }}
+            >
+              {pick.brand}
+            </div>
+            <div
+              style={{ fontSize: "22px", fontWeight: "bold", color: "#a855f7" }}
+            >
+              ${pick.price_usd ?? pick.price ?? "—"}
+            </div>
+            {pick.justification && (
+              <div
+                style={{
+                  fontSize: "12px",
+                  fontStyle: "italic",
+                  color: "#333",
+                  lineHeight: 1.55,
+                  fontFamily: "Georgia, serif",
+                  borderLeft: "2px solid #e879a0",
+                  paddingLeft: "9px",
+                }}
+              >
+                "{pick.justification}"
+              </div>
+            )}
+            {pick.recommended_size && (
+              <div
+                style={{
+                  fontSize: "12px",
+                  color: "#555",
+                  background: "#f0e8ff",
+                  borderRadius: "6px",
+                  padding: "7px 10px",
+                }}
+              >
+                <strong>Size rec:</strong> {pick.recommended_size}
+                {pick.size_adjustment && pick.size_adjustment !== "none" && (
+                  <span> · size {pick.size_adjustment}</span>
+                )}
+                {pick.fit_flags?.length > 0 && (
+                  <div style={{ marginTop: "px", fontSize: "11px" }}>
+                    {pick.fit_flags.join(" · ")}
+                  </div>
+                )}
+              </div>
+            )}
+            <a
+              href={pick.url || pick.product_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                marginTop: "auto",
+                display: "inline-block",
+                padding: "9px 20px",
+                background: "linear-gradient(135deg, #e879a0, #a855f7)",
+                color: "white",
+                borderRadius: "20px",
+                textDecoration: "none",
+                fontWeight: "bold",
+                fontSize: "13px",
+                textAlign: "center",
+              }}
+            >
+              Shop →
+            </a>
+          </div>
+        )}
+
+        {/* Camera — static image + optional try-on overlay.
+            Adjust the overlay top/left/width/height to match the screen in camera_results.png. */}
+        <div
+          style={{
+            position: "absolute",
+            top: "500px",
+            left: "10px",
+            width: "500px",
+            zIndex: 20,
+          }}
+        >
+          <img
+            src={cameraResults}
+            className="result-asset"
+            alt="camera"
+            style={{ width: "100%", display: "block" }}
+          />{" "}
+          {/* Show captured photo on the camera screen */}
+          {photoUrl && (
+            <img
+              src={photoUrl}
+              alt="your photo"
+              style={{
+                position: "absolute",
+                top: "100px",
+                left: "42px",
+                width: "300px",
+                height: "220px",
+                objectFit: "cover",
+                borderRadius: "4px",
+                transform: "rotate(12deg)",
+                transformOrigin: "center center",
+              }}
+            />
+          )}{" "}
+          {TRY_ON_IMAGES[activeIdx] && (
+            <img
+              src={TRY_ON_IMAGES[activeIdx]}
+              alt="try-on"
+              style={{
+                position: "absolute",
+                top: "60px",
+                left: "85px",
+                width: "240px",
+                height: "300px",
+                objectFit: "cover",
+                borderRadius: "4px",
+              }}
+            />
+          )}
+        </div>
+
+        {/* Photostrip — static image + 4 clickable product-image overlays */}
+        <div
+          style={{
+            position: "absolute",
+            top: "0px",
+            right: "30px",
+            width: "280px",
+            zIndex: 40,
+            pointerEvents: "auto",
+          }}
+        >
+          <img
+            src={photostrip}
+            className="result-asset results-photostrip"
+            alt="photostrip"
+            style={{ width: "100%", display: "block" }}
+          />
+
+          {picks.slice(0, 4).map((p, i) => (
+            <div
+              key={p.id || i}
+              onClick={() => setActiveIdx(i)}
+              style={{
+                position: "absolute",
+                top: STRIP_FRAMES[i].top,
+                left: "0x",
+                width: "236px",
+                height: STRIP_FRAMES[i].height,
+                cursor: "pointer",
+                borderRadius: "4px",
+                overflow: "hidden",
+                outline: activeIdx === i ? "3px solid #e879a0" : "none",
+                outlineOffset: "2px",
+                boxShadow:
+                  activeIdx === i ? "0 0 14px rgba(232,121,160,0.85)" : "none",
+                transition: "box-shadow 0.2s, outline 0.2s",
+                zIndex: 41,
+                pointerEvents: "auto",
+              }}
+            >
+              {p.image_url ? (
+                <img
+                  src={p.image_url}
+                  alt={p.name}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    background: "#ddd",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "11px",
+                    color: "#999",
+                  }}
+                >
+                  No image
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Aura's voice note — auto-plays, controls visible top-right */}
+        {audioUrl && (
+          <audio
+            ref={audioRef}
+            src={`${API_BASE}${audioUrl}`}
+            controls
+            style={{
+              position: "absolute",
+              top: "18px",
+              right: "340px",
+              height: "30px",
+              opacity: 0.85,
+              zIndex: 50,
+            }}
+          />
+        )}
+
+        <button className="result-asset retake-btn" onClick={onBack}>
+          RETAKE PHOTO
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default Results;
