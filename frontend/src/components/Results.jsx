@@ -210,7 +210,6 @@ const Results = ({ data, onBack }) => {
               style={{
                 fontSize: "17px",
                 fontWeight: "bold",
-                fontFamily: "Georgia, serif",
                 color: "#1a1a1a",
                 lineHeight: 1.3,
               }}
@@ -221,7 +220,6 @@ const Results = ({ data, onBack }) => {
               style={{
                 fontSize: "13px",
                 color: "#666",
-                fontFamily: "Georgia, serif",
               }}
             >
               {pick.brand}
@@ -238,7 +236,6 @@ const Results = ({ data, onBack }) => {
                   fontStyle: "italic",
                   color: "#333",
                   lineHeight: 1.55,
-                  fontFamily: "Georgia, serif",
                   borderLeft: "2px solid #e879a0",
                   paddingLeft: "9px",
                 }}

@@ -200,7 +200,13 @@ const Locker = ({ onResults }) => {
 
         <img src={star} className="dynamic-asset star-top" alt="star" />
         <img src={cellPhone} className="dynamic-asset flip-phone" alt="phone" />
-        <img src={auraLogo} className="aura-header" alt="aura logo" />
+        <img
+          src={auraLogo}
+          className={`aura-header${isLoading ? " cooking" : ""}`}
+          alt="aura logo"
+          onClick={handleSubmit}
+          title={isLoading ? "Aura is cooking... 🍳" : "Ask Aura"}
+        />
 
         {/* Camera — shutter stores the photo blob; submit button sends everything */}
         <Camera onCapture={handlePhotoCapture} isLoading={isLoading} />
@@ -291,38 +297,26 @@ const Locker = ({ onResults }) => {
           </div>
         </div>
 
-        {/* Ask Aura submit button */}
-        <button
-          onClick={handleSubmit}
-          disabled={isLoading || !canSubmit}
-          style={{
-            position: "absolute",
-            top: "680px",
-            right: "100px",
-            padding: "14px 48px",
-            background:
-              isLoading || !canSubmit
-                ? "#888"
-                : "linear-gradient(135deg, #e879a0, #a855f7)",
-            color: isLoading || !canSubmit ? "#ccc" : "white",
-            border: "none",
-            borderRadius: "30px",
-            fontWeight: "bold",
-            fontSize: "16px",
-            cursor: isLoading || !canSubmit ? "not-allowed" : "pointer",
-            boxShadow:
-              isLoading || !canSubmit
-                ? "none"
-                : "0 4px 16px rgba(168,85,247,0.45)",
-            zIndex: 100,
-            whiteSpace: "nowrap",
-            opacity: isLoading || !canSubmit ? 0.55 : 1,
-            transition: "opacity 0.2s, background 0.2s",
-            pointerEvents: "auto",
-          }}
-        >
-          {isLoading ? "Aura is cooking... 🍳" : "✦ Ask Aura"}
-        </button>
+        {isLoading && (
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              color: "white",
+              fontSize: "18px",
+              fontWeight: "bold",
+              background: "rgba(0,0,0,0.55)",
+              padding: "12px 28px",
+              borderRadius: "30px",
+              zIndex: 200,
+              pointerEvents: "none",
+            }}
+          >
+            Aura is cooking... 🍳
+          </div>
+        )}
 
         {error && (
           <div
