@@ -1,6 +1,8 @@
 """
 Static clothing catalog. Each item is the ground truth Aura reasons over.
-Fields: id, name, brand, price_usd, url, vibe_tags, garment_type, colors, material, image_url
+Fields: id, name, brand, price_usd, url, vibe_tags, garment_type, colors, material,
+        image_url, amazon_asin (optional — enables AgenticShopping via Knot),
+        knot_merchant_id (defaults to Amazon/46 when amazon_asin is set)
 """
 
 CATALOG: list[dict] = [
@@ -15,6 +17,7 @@ CATALOG: list[dict] = [
         "colors": ["ivory", "champagne"],
         "material": "100% Tencel satin — liquid drape, ultra-soft",
         "image_url": "https://images.unsplash.com/photo-1585487000160-6ebcfceb0d03?w=400",
+        "amazon_asin": None,
     },
     {
         "id": "002",
@@ -27,6 +30,7 @@ CATALOG: list[dict] = [
         "colors": ["camel", "oatmeal"],
         "material": "Wool-blend — structured shoulders, relaxed body",
         "image_url": "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400",
+        "amazon_asin": None,
     },
     {
         "id": "003",
@@ -39,6 +43,7 @@ CATALOG: list[dict] = [
         "colors": ["white", "red"],
         "material": "Cotton jersey — cropped, form-fitting",
         "image_url": "https://images.unsplash.com/photo-1562157873-818bc0726f68?w=400",
+        "amazon_asin": None,
     },
     {
         "id": "004",
@@ -51,6 +56,7 @@ CATALOG: list[dict] = [
         "colors": ["light wash denim"],
         "material": "100% organic cotton — distressed, rigid denim",
         "image_url": "https://images.unsplash.com/photo-1542272604-787c3835535d?w=400",
+        "amazon_asin": None,
     },
     {
         "id": "005",
@@ -63,6 +69,7 @@ CATALOG: list[dict] = [
         "colors": ["taupe", "stone"],
         "material": "Viscose-nylon rib knit — form-fitting, slight stretch",
         "image_url": "https://images.unsplash.com/photo-1577900232427-18219b9166a0?w=400",
+        "amazon_asin": None,
     },
     {
         "id": "006",
@@ -75,6 +82,7 @@ CATALOG: list[dict] = [
         "colors": ["black"],
         "material": "Lamb leather — asymmetric zip, quilted panels",
         "image_url": "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400",
+        "amazon_asin": None,
     },
     {
         "id": "007",
@@ -87,30 +95,37 @@ CATALOG: list[dict] = [
         "colors": ["red", "green", "navy plaid"],
         "material": "Wool tartan — box pleats, mid-rise",
         "image_url": "https://images.unsplash.com/photo-1583496661160-fb5218f5a0b5?w=400",
+        "amazon_asin": None,
     },
     {
+        # Available on Amazon — Quince cashmere
         "id": "008",
         "name": "Cashmere Crewneck Sweater",
         "brand": "Quince",
         "price_usd": 99,
-        "url": "https://www.quince.com/products/100-mongolian-cashmere-crew",
+        "url": "https://www.amazon.com/dp/B0BFQW7D3K",
         "vibe_tags": ["quiet luxury", "clean girl", "dark academia"],
         "garment_type": "sweater",
         "colors": ["oatmeal", "charcoal", "burgundy"],
         "material": "100% Mongolian cashmere — relaxed fit, ribbed hem",
         "image_url": "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=400",
+        "amazon_asin": "B0BFQW7D3K",
+        "knot_merchant_id": 46,
     },
     {
+        # Available on Amazon — Dickies cargo pants
         "id": "009",
         "name": "Cargo Utility Pants",
         "brand": "Dickies",
-        "price_usd": 55,
-        "url": "https://www.dickies.com/cargo-pants",
+        "price_usd": 35,
+        "url": "https://www.amazon.com/dp/B07XQKKLXH",
         "vibe_tags": ["streetwear", "Y2K"],
         "garment_type": "pants",
         "colors": ["olive", "black", "khaki"],
         "material": "Cotton canvas — relaxed fit, multiple pockets",
         "image_url": "https://images.unsplash.com/photo-1548883354-7622d03aca27?w=400",
+        "amazon_asin": "B07XQKKLXH",
+        "knot_merchant_id": 46,
     },
     {
         "id": "010",
@@ -123,18 +138,22 @@ CATALOG: list[dict] = [
         "colors": ["blush pink", "ivory"],
         "material": "Mesh with floral lace trim — delicate, sheer overlay",
         "image_url": "https://images.unsplash.com/photo-1571513722275-4b41940f54b8?w=400",
+        "amazon_asin": None,
     },
     {
+        # Available on Amazon — Essentials fleece hoodie (FOG dupe tier)
         "id": "011",
-        "name": "Oversized Graphic Hoodie",
-        "brand": "Fear of God Essentials",
-        "price_usd": 110,
-        "url": "https://fearofgodessentials.com",
+        "name": "Oversized Fleece Hoodie",
+        "brand": "Amazon Essentials",
+        "price_usd": 35,
+        "url": "https://www.amazon.com/dp/B08NF7QGSP",
         "vibe_tags": ["streetwear"],
         "garment_type": "hoodie",
         "colors": ["grey marl", "black", "cream"],
-        "material": "Heavyweight fleece cotton — dropped shoulders, rubberized logo",
+        "material": "Heavyweight fleece cotton — dropped shoulders, kangaroo pocket",
         "image_url": "https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=400",
+        "amazon_asin": "B08NF7QGSP",
+        "knot_merchant_id": 46,
     },
     {
         "id": "012",
@@ -147,6 +166,7 @@ CATALOG: list[dict] = [
         "colors": ["floral print", "cobalt", "cream"],
         "material": "100% silk charmeuse — adjustable tie straps",
         "image_url": "https://images.unsplash.com/photo-1485462537746-965f33f7f6a7?w=400",
+        "amazon_asin": None,
     },
     {
         "id": "013",
@@ -159,18 +179,22 @@ CATALOG: list[dict] = [
         "colors": ["black", "cognac"],
         "material": "Suede or nappa leather — block heel, side zip",
         "image_url": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=400",
+        "amazon_asin": None,
     },
     {
+        # Available on Amazon — classic band tee style
         "id": "014",
-        "name": "Vintage Band Tee",
-        "brand": "Thrift / UO",
-        "price_usd": 38,
-        "url": "https://www.urbanoutfitters.com/band-tees",
+        "name": "Vintage Washed Graphic Tee",
+        "brand": "Gildan (vintage wash)",
+        "price_usd": 22,
+        "url": "https://www.amazon.com/dp/B07NFXZXBG",
         "vibe_tags": ["streetwear", "Y2K"],
         "garment_type": "top",
         "colors": ["black", "washed grey"],
         "material": "Washed cotton jersey — oversized, raw hem",
         "image_url": "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=400",
+        "amazon_asin": "B07NFXZXBG",
+        "knot_merchant_id": 46,
     },
     {
         "id": "015",
@@ -183,18 +207,22 @@ CATALOG: list[dict] = [
         "colors": ["black", "nude", "red"],
         "material": "Patent leather — square toe, grosgrain bow",
         "image_url": "https://images.unsplash.com/photo-1518049362265-d5b2a6467637?w=400",
+        "amazon_asin": None,
     },
     {
+        # Available on Amazon — wide-leg linen trousers
         "id": "016",
-        "name": "Wide-Leg Trousers",
-        "brand": "COS",
-        "price_usd": 135,
-        "url": "https://www.cos.com/en_gbp/women/trousers",
+        "name": "Wide-Leg Linen Trousers",
+        "brand": "Amazon Essentials",
+        "price_usd": 40,
+        "url": "https://www.amazon.com/dp/B09BFML7Y9",
         "vibe_tags": ["quiet luxury", "clean girl", "dark academia"],
         "garment_type": "pants",
         "colors": ["ecru", "dark navy", "chocolate brown"],
         "material": "Cotton-linen blend — high waist, fluid drape",
         "image_url": "https://images.unsplash.com/photo-1594938298603-c8148c4bcc91?w=400",
+        "amazon_asin": "B09BFML7Y9",
+        "knot_merchant_id": 46,
     },
     {
         "id": "017",
@@ -207,17 +235,21 @@ CATALOG: list[dict] = [
         "colors": ["baby blue", "mini check"],
         "material": "Tweed-effect polyester — raw fringe hem",
         "image_url": "https://images.unsplash.com/photo-1575032617751-6ddec2089882?w=400",
+        "amazon_asin": None,
     },
     {
+        # Available on Amazon — New Balance 2002R
         "id": "018",
-        "name": "Chunky Platform Sneaker",
-        "brand": "New Balance 2002R",
+        "name": "New Balance 2002R Sneaker",
+        "brand": "New Balance",
         "price_usd": 130,
-        "url": "https://www.newbalance.com/pd/2002r",
+        "url": "https://www.amazon.com/dp/B09VN7F4MH",
         "vibe_tags": ["streetwear", "Y2K", "clean girl"],
         "garment_type": "shoes",
         "colors": ["grey", "white", "sea salt"],
         "material": "Suede and mesh upper — ABZORB cushioning",
         "image_url": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400",
+        "amazon_asin": "B09VN7F4MH",
+        "knot_merchant_id": 46,
     },
 ]

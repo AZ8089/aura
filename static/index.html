@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Aura — Your AI Stylist Bestie</title>
+  <!-- Knot Web SDK -->
+  <script src="https://unpkg.com/knotapi-js@next"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -13,6 +15,8 @@
       --cream: #fdf6f0;
       --dark: #1a1a1a;
       --mid: #555;
+      --green: #16a34a;
+      --red: #b91c1c;
       --radius: 16px;
     }
 
@@ -64,6 +68,18 @@
       letter-spacing: 0.08em;
       color: var(--mid);
       margin-bottom: 1rem;
+    }
+
+    /* Knot connect section */
+    #knot-section .knot-status {
+      font-size: 0.9rem;
+      color: var(--mid);
+      margin-bottom: 0.75rem;
+    }
+
+    #knot-section .knot-status.connected {
+      color: var(--green);
+      font-weight: 600;
     }
 
     /* Camera */
@@ -141,7 +157,12 @@
 
     .btn-danger {
       background: #fee2e2;
-      color: #b91c1c;
+      color: var(--red);
+    }
+
+    .btn-success {
+      background: #dcfce7;
+      color: var(--green);
     }
 
     /* Send button */
@@ -194,6 +215,7 @@
       overflow: hidden;
       border: 1px solid #eee;
       transition: transform 0.2s;
+      position: relative;
     }
 
     .pick-card:hover { transform: translateY(-4px); }
@@ -204,9 +226,7 @@
       object-fit: cover;
     }
 
-    .pick-card-body {
-      padding: 0.75rem;
-    }
+    .pick-card-body { padding: 0.75rem; }
 
     .pick-card-body .pick-name {
       font-size: 0.85rem;
@@ -240,6 +260,132 @@
       font-style: italic;
       line-height: 1.4;
     }
+
+    .purchase-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: var(--green);
+      color: white;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: 999px;
+    }
+
+    .purchase-badge.pending {
+      background: #f59e0b;
+    }
+
+    .purchase-badge.failed {
+      background: var(--red);
+    }
+
+    /* ── Purchase Confirmation Modal ──────────────────────────────────────── */
+    #confirm-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #confirm-modal.open {
+      display: flex;
+    }
+
+    .modal-box {
+      background: white;
+      border-radius: var(--radius);
+      padding: 2rem;
+      max-width: 480px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    .modal-box h3 {
+      font-size: 1.2rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+    }
+
+    .modal-box p {
+      font-size: 0.9rem;
+      color: var(--mid);
+      margin-bottom: 1.25rem;
+      line-height: 1.5;
+    }
+
+    .modal-picks-list {
+      list-style: none;
+      margin-bottom: 1.5rem;
+    }
+
+    .modal-picks-list li {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      padding: 0.4rem 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .modal-picks-list li:last-child { border-bottom: none; }
+
+    .modal-total {
+      font-weight: 700;
+      font-size: 1rem;
+      text-align: right;
+      margin-bottom: 1.5rem;
+      color: #a855f7;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .modal-actions button { flex: 1; padding: 0.75rem; font-size: 1rem; }
+
+    /* ── Subscription Banner ──────────────────────────────────────────────── */
+    #sub-banner {
+      display: none;
+      width: 100%;
+      max-width: 640px;
+      background: white;
+      border-radius: var(--radius);
+      border-left: 4px solid #f59e0b;
+      padding: 1rem 1.25rem;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+      margin-bottom: 1.5rem;
+    }
+
+    #sub-banner h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .sub-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.88rem;
+      padding: 0.4rem 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .sub-item:last-child { border-bottom: none; }
+
+    .sub-item .sub-name { font-weight: 600; }
+
+    .sub-item .sub-cost { color: var(--mid); margin: 0 0.75rem; flex: 1; }
+
+    .sub-item button {
+      font-size: 0.78rem;
+      padding: 0.3rem 0.8rem;
+    }
   </style>
 </head>
 <body>
@@ -249,7 +395,21 @@
     <p>your AI stylist bestie. she will NOT hold back.</p>
   </header>
 
-  <!-- Camera Section -->
+  <!-- ── Step 0: Connect accounts (Knot Link) ───────────────────────────── -->
+  <div class="card" id="knot-section">
+    <h2>🔗 Step 0 — Connect Your Accounts</h2>
+    <p class="knot-status" id="knot-status-text">
+      Connect your Amazon account so Aura can see your taste and cop items automatically.
+    </p>
+    <div class="btn-row">
+      <button class="btn-primary" id="knot-connect-btn">Connect Amazon</button>
+      <button class="btn-success" id="knot-demo-btn">✦ Use Demo Account</button>
+      <button class="btn-secondary" id="knot-skip-btn">Skip for now</button>
+      <button class="btn-danger" id="knot-disconnect-btn" style="display:none">Disconnect</button>
+    </div>
+  </div>
+
+  <!-- ── Step 1: Camera ─────────────────────────────────────────────────── -->
   <div class="card">
     <h2>📸 Step 1 — Show Her What You're Working With</h2>
     <video id="camera-preview" autoplay playsinline muted></video>
@@ -262,7 +422,7 @@
     </div>
   </div>
 
-  <!-- Voice Section -->
+  <!-- ── Step 2: Voice ──────────────────────────────────────────────────── -->
   <div class="card">
     <h2>🎙 Step 2 — Tell Aura What You Need</h2>
     <div id="rec-timer"></div>
@@ -274,24 +434,44 @@
     <audio id="voice-playback" controls style="width:100%;margin-top:0.75rem;display:none"></audio>
   </div>
 
-  <!-- Send -->
+  <!-- ── Status + Send ──────────────────────────────────────────────────── -->
   <div id="status"></div>
   <button id="send-btn" disabled>✦ Ask Aura</button>
 
-  <!-- Audio Response -->
+  <!-- ── Subscription Banner (shown after response) ────────────────────── -->
+  <div id="sub-banner">
+    <h3>👀 Aura noticed something…</h3>
+    <div id="sub-list"></div>
+  </div>
+
+  <!-- ── Audio Response ─────────────────────────────────────────────────── -->
   <div class="card" id="audio-section">
     <h2>🔊 Aura's Take</h2>
     <audio id="aura-audio" controls autoplay></audio>
   </div>
 
-  <!-- Picks Grid -->
+  <!-- ── Picks Grid ─────────────────────────────────────────────────────── -->
   <div class="card" id="picks-section">
     <h2>🛍 The Picks</h2>
     <div class="picks-grid" id="picks-grid"></div>
   </div>
 
+  <!-- ── Purchase Confirmation Modal ───────────────────────────────────── -->
+  <div id="confirm-modal">
+    <div class="modal-box">
+      <h3>Aura's about to cop these for you 🛒</h3>
+      <p>She'll place the order on your Amazon account automatically. Real money, real clothes.</p>
+      <ul class="modal-picks-list" id="modal-picks-list"></ul>
+      <div class="modal-total" id="modal-total"></div>
+      <div class="modal-actions">
+        <button class="btn-danger" id="modal-cancel-btn">Nah, just browse</button>
+        <button class="btn-primary" id="modal-confirm-btn">✦ Yes, cop it all</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // ── State ──────────────────────────────────────────────────────────────
+    // ── State ─────────────────────────────────────────────────────────────
     let photoBlob = null;
     let audioBlob = null;
     let mediaRecorder = null;
@@ -300,26 +480,143 @@
     let recTimerInterval = null;
     let recSeconds = 0;
 
-    // ── Element refs ───────────────────────────────────────────────────────
-    const cameraPreview  = document.getElementById('camera-preview');
-    const photoCanvas    = document.getElementById('photo-canvas');
-    const photoPreview   = document.getElementById('photo-preview');
-    const startCameraBtn = document.getElementById('start-camera-btn');
-    const takePhotoBtn   = document.getElementById('take-photo-btn');
-    const retakeBtn      = document.getElementById('retake-btn');
-    const recStartBtn    = document.getElementById('rec-start-btn');
-    const recStopBtn     = document.getElementById('rec-stop-btn');
-    const recTimer       = document.getElementById('rec-timer');
-    const waveformFill   = document.getElementById('waveform-fill');
-    const voicePlayback  = document.getElementById('voice-playback');
-    const sendBtn        = document.getElementById('send-btn');
-    const status         = document.getElementById('status');
-    const audioSection   = document.getElementById('audio-section');
-    const auraAudio      = document.getElementById('aura-audio');
-    const picksSection   = document.getElementById('picks-section');
-    const picksGrid      = document.getElementById('picks-grid');
+    // Knot state
+    let knotUserId = null;          // external_user_id — generated once, persisted in localStorage
+    let knotConnected = false;       // true after SDK onSuccess
 
-    // ── Camera ─────────────────────────────────────────────────────────────
+    // Pending picks (for purchase confirmation modal)
+    let pendingPicks = [];
+
+    // ── Element refs ──────────────────────────────────────────────────────
+    const knotSection       = document.getElementById('knot-section');
+    const knotStatusText    = document.getElementById('knot-status-text');
+    const knotConnectBtn    = document.getElementById('knot-connect-btn');
+    const knotDemoBtn       = document.getElementById('knot-demo-btn');
+    const knotSkipBtn       = document.getElementById('knot-skip-btn');
+    const knotDisconnectBtn = document.getElementById('knot-disconnect-btn');
+
+    const cameraPreview    = document.getElementById('camera-preview');
+    const photoCanvas      = document.getElementById('photo-canvas');
+    const photoPreview     = document.getElementById('photo-preview');
+    const startCameraBtn   = document.getElementById('start-camera-btn');
+    const takePhotoBtn     = document.getElementById('take-photo-btn');
+    const retakeBtn        = document.getElementById('retake-btn');
+    const recStartBtn      = document.getElementById('rec-start-btn');
+    const recStopBtn       = document.getElementById('rec-stop-btn');
+    const recTimer         = document.getElementById('rec-timer');
+    const waveformFill     = document.getElementById('waveform-fill');
+    const voicePlayback    = document.getElementById('voice-playback');
+    const sendBtn          = document.getElementById('send-btn');
+    const status           = document.getElementById('status');
+    const audioSection     = document.getElementById('audio-section');
+    const auraAudio        = document.getElementById('aura-audio');
+    const picksSection     = document.getElementById('picks-section');
+    const picksGrid        = document.getElementById('picks-grid');
+    const subBanner        = document.getElementById('sub-banner');
+    const subList          = document.getElementById('sub-list');
+    const confirmModal     = document.getElementById('confirm-modal');
+    const modalPicksList   = document.getElementById('modal-picks-list');
+    const modalTotal       = document.getElementById('modal-total');
+    const modalCancelBtn   = document.getElementById('modal-cancel-btn');
+    const modalConfirmBtn  = document.getElementById('modal-confirm-btn');
+
+    // ── Knot user ID (generate once, keep in localStorage) ───────────────
+    function getOrCreateUserId() {
+      let id = localStorage.getItem('aura_knot_user_id');
+      if (!id) {
+        id = 'aura-' + crypto.randomUUID();
+        localStorage.setItem('aura_knot_user_id', id);
+      }
+      return id;
+    }
+
+    // ── Knot: Connect Accounts ────────────────────────────────────────────
+    knotConnectBtn.addEventListener('click', async () => {
+      knotUserId = getOrCreateUserId();
+      knotConnectBtn.disabled = true;
+      knotConnectBtn.textContent = 'Connecting…';
+
+      try {
+        const resp = await fetch('/knot/session', {
+          method: 'POST',
+          body: new URLSearchParams({ external_user_id: knotUserId }),
+        });
+
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({}));
+          throw new Error(err.detail || `Session error ${resp.status}`);
+        }
+
+        const { session, client_id, environment } = await resp.json();
+
+        const KnotapiJS = window.KnotapiJS.default;
+        const knotapi = new KnotapiJS();
+
+        knotapi.open({
+          sessionId: session,
+          clientId: client_id,
+          environment: environment,
+          entryPoint: 'aura-onboarding',
+          useCategories: true,
+          useSearch: true,
+          onSuccess: (details) => {
+            setKnotConnected(knotUserId);
+            knotSkipBtn.textContent = 'Re-connect';
+          },
+          onError: (errorCode, message) => {
+            console.error('[Knot] error', errorCode, message);
+            setStatus(`Knot error: ${errorCode}. You can still use Aura without it.`);
+            knotConnectBtn.disabled = false;
+            knotConnectBtn.textContent = 'Connect Amazon';
+          },
+          onExit: () => {
+            if (!knotConnected) {
+              knotConnectBtn.disabled = false;
+              knotConnectBtn.textContent = 'Connect Amazon';
+            }
+          },
+        });
+
+      } catch (err) {
+        console.error('[Knot] session error', err);
+        setStatus(`Couldn't start Knot session: ${err.message}`);
+        knotConnectBtn.disabled = false;
+        knotConnectBtn.textContent = 'Connect Amazon';
+      }
+    });
+
+    function setKnotConnected(userId) {
+      knotUserId = userId;
+      knotConnected = true;
+      knotStatusText.textContent = '✅ Connected! Aura can see your purchase history.';
+      knotStatusText.className = 'knot-status connected';
+      knotConnectBtn.style.display = 'none';
+      knotDemoBtn.style.display = 'none';
+      knotDisconnectBtn.style.display = 'inline-block';
+      setStatus('Amazon connected — picks will be personalised to you 🛒');
+    }
+
+    knotDemoBtn.addEventListener('click', () => {
+      setKnotConnected('aura-test-user-001');
+    });
+
+    knotSkipBtn.addEventListener('click', () => {
+      knotSection.style.display = 'none';
+      setStatus('Skipped account connection — picks will be vibes-based only ✨');
+    });
+
+    knotDisconnectBtn.addEventListener('click', () => {
+      knotConnected = false;
+      knotDisconnectBtn.style.display = 'none';
+      knotConnectBtn.style.display = 'inline-block';
+      knotConnectBtn.disabled = false;
+      knotDemoBtn.style.display = 'inline-block';
+      knotStatusText.textContent = 'Connect your Amazon account so Aura can see your taste and cop items automatically.';
+      knotStatusText.className = 'knot-status';
+      setStatus('Amazon disconnected — picks will be vibes-based only ✨');
+    });
+
+    // ── Camera ────────────────────────────────────────────────────────────
     startCameraBtn.addEventListener('click', async () => {
       try {
         cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
@@ -343,7 +640,6 @@
         photoPreview.style.display = 'block';
         retakeBtn.style.display = 'inline-block';
         takePhotoBtn.style.display = 'none';
-        // stop camera stream to save resources
         cameraStream.getTracks().forEach(t => t.stop());
         cameraPreview.style.display = 'none';
         checkReady();
@@ -363,7 +659,7 @@
       checkReady();
     });
 
-    // ── Voice Recording ────────────────────────────────────────────────────
+    // ── Voice Recording ───────────────────────────────────────────────────
     recStartBtn.addEventListener('click', async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -411,9 +707,8 @@
       }
     });
 
-    // ── Submit ─────────────────────────────────────────────────────────────
+    // ── Submit (phase 1 — get picks, no purchase yet) ─────────────────────
     function checkReady() {
-      // at least one of photo or audio must be present
       sendBtn.disabled = !(photoBlob || audioBlob);
     }
 
@@ -421,11 +716,12 @@
       if (!photoBlob && !audioBlob) return;
 
       sendBtn.disabled = true;
-      setStatus('Sending to Aura... she\'s cooking 🍳');
+      setStatus('Sending to Aura… she\'s cooking 🍳');
 
       const form = new FormData();
       if (audioBlob) form.append('audio', audioBlob, 'voice.webm');
       if (photoBlob) form.append('image', photoBlob, 'photo.jpg');
+      if (knotConnected && knotUserId) form.append('knot_token', knotUserId);
 
       try {
         const res = await fetch('/chat', { method: 'POST', body: form });
@@ -445,20 +741,21 @@
           picksSection.style.display = 'block';
           picksGrid.innerHTML = '';
           data.picks.forEach(pick => {
-            const card = document.createElement('div');
-            card.className = 'pick-card';
-            card.innerHTML = `
-              <img src="${pick.image_url || ''}" alt="${pick.name}" loading="lazy" />
-              <div class="pick-card-body">
-                <div class="pick-name">${pick.name}</div>
-                <div class="pick-brand">${pick.brand}</div>
-                <div class="pick-price">$${pick.price_usd}</div>
-                <a href="${pick.url}" target="_blank" rel="noopener">Shop →</a>
-                ${pick.justification ? `<div class="pick-justification">"${pick.justification}"</div>` : ''}
-              </div>
-            `;
+            const card = buildPickCard(pick);
             picksGrid.appendChild(card);
           });
+
+          // If Knot connected and any pick has an ASIN, offer to purchase
+          const purchasablePicks = data.picks.filter(p => p.amazon_asin);
+          if (knotConnected && purchasablePicks.length > 0) {
+            pendingPicks = data.picks;
+            setTimeout(() => openConfirmModal(data.picks), 1500);
+          }
+        }
+
+        // Subscription banner
+        if (data.active_subscriptions && data.active_subscriptions.length > 0) {
+          renderSubBanner(data.active_subscriptions);
         }
 
         setStatus('Aura has spoken. 💅');
@@ -469,7 +766,135 @@
       }
     });
 
-    // ── Helpers ────────────────────────────────────────────────────────────
+    // ── Pick card builder ─────────────────────────────────────────────────
+    function buildPickCard(pick, purchaseStatus) {
+      const card = document.createElement('div');
+      card.className = 'pick-card';
+      card.dataset.itemId = pick.id;
+
+      if (purchaseStatus) {
+        const badge = document.createElement('div');
+        badge.className = `purchase-badge ${purchaseStatus.status}`;
+        if (purchaseStatus.status === 'pending') badge.textContent = '⏳ Ordered';
+        else if (purchaseStatus.status === 'purchased') badge.textContent = '✓ Copped';
+        else if (purchaseStatus.status === 'failed') badge.textContent = '✗ Failed';
+        else if (purchaseStatus.status === 'skipped') badge.textContent = '→ Link to shop';
+        card.appendChild(badge);
+      }
+
+      card.innerHTML += `
+        <img src="${pick.image_url || ''}" alt="${pick.name}" loading="lazy" />
+        <div class="pick-card-body">
+          <div class="pick-name">${pick.name}</div>
+          <div class="pick-brand">${pick.brand}</div>
+          <div class="pick-price">$${pick.price_usd}</div>
+          <a href="${pick.url}" target="_blank" rel="noopener">Shop →</a>
+          ${pick.justification ? `<div class="pick-justification">"${pick.justification}"</div>` : ''}
+        </div>
+      `;
+      return card;
+    }
+
+    // ── Purchase confirmation modal ───────────────────────────────────────
+    function openConfirmModal(picks) {
+      modalPicksList.innerHTML = '';
+      let total = 0;
+      picks.forEach(pick => {
+        if (!pick.amazon_asin) return;
+        total += pick.price_usd;
+        const li = document.createElement('li');
+        li.innerHTML = `<span>${pick.name}</span><span>$${pick.price_usd}</span>`;
+        modalPicksList.appendChild(li);
+      });
+      modalTotal.textContent = `Total: $${total.toFixed(2)}`;
+      confirmModal.classList.add('open');
+    }
+
+    modalCancelBtn.addEventListener('click', () => {
+      confirmModal.classList.remove('open');
+      setStatus('No purchase made — items are just picks for now 🛍');
+    });
+
+    modalConfirmBtn.addEventListener('click', async () => {
+      confirmModal.classList.remove('open');
+      setStatus('Aura is placing your order… 🛒');
+      modalConfirmBtn.disabled = true;
+
+      const form = new FormData();
+      if (audioBlob) form.append('audio', audioBlob, 'voice.webm');
+      if (photoBlob) form.append('image', photoBlob, 'photo.jpg');
+      if (knotConnected && knotUserId) form.append('knot_token', knotUserId);
+      form.append('execute_purchase', 'true');
+
+      try {
+        const res = await fetch('/chat', { method: 'POST', body: form });
+        if (!res.ok) throw new Error(`Server error: ${res.status}`);
+        const data = await res.json();
+
+        // Update pick cards with purchase status
+        if (data.purchase_status) {
+          const statusByItemId = {};
+          data.purchase_status.forEach(s => { statusByItemId[s.item_id] = s; });
+
+          picksGrid.innerHTML = '';
+          data.picks.forEach(pick => {
+            const ps = statusByItemId[pick.id];
+            picksGrid.appendChild(buildPickCard(pick, ps));
+          });
+        }
+
+        const purchasedCount = (data.purchase_status || []).filter(s => s.status === 'pending').length;
+        setStatus(purchasedCount > 0
+          ? `Aura copped ${purchasedCount} item${purchasedCount > 1 ? 's' : ''} for you ✓`
+          : 'Order submitted — check your Amazon for confirmation ✓');
+      } catch (err) {
+        setStatus(`Purchase failed: ${err.message}`);
+        console.error(err);
+      } finally {
+        modalConfirmBtn.disabled = false;
+      }
+    });
+
+    // ── Subscription banner ───────────────────────────────────────────────
+    function renderSubBanner(subscriptions) {
+      subList.innerHTML = '';
+      subscriptions.forEach(sub => {
+        const row = document.createElement('div');
+        row.className = 'sub-item';
+        const costStr = sub.monthly_cost_usd != null ? `$${sub.monthly_cost_usd}/mo` : '';
+        row.innerHTML = `
+          <span class="sub-name">${sub.name}</span>
+          <span class="sub-cost">${costStr}</span>
+          ${sub.is_cancellable
+            ? `<button class="btn-danger" data-sub-id="${sub.id}">Cancel</button>`
+            : `<span style="font-size:0.75rem;color:var(--mid)">Not cancellable</span>`
+          }
+        `;
+        subList.appendChild(row);
+      });
+
+      subBanner.style.display = 'block';
+
+      // Wire up cancel buttons
+      subList.querySelectorAll('[data-sub-id]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const subId = btn.dataset.subId;
+          btn.disabled = true;
+          btn.textContent = 'Cancelling…';
+          try {
+            const res = await fetch(`/cancel-subscription/${subId}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error(`${res.status}`);
+            btn.closest('.sub-item').innerHTML = `<span style="color:var(--green);font-size:0.85rem">✓ Cancelled</span>`;
+          } catch (err) {
+            btn.disabled = false;
+            btn.textContent = 'Retry';
+            console.error('[cancel sub]', err);
+          }
+        });
+      });
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────
     function setStatus(msg) {
       status.textContent = msg;
     }

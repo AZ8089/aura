@@ -40,9 +40,16 @@ Use these definitions when matching items to aesthetics:
   graphic tees, beanies. Gender-neutral silhouettes. Confidence is the accessory.
 
 ## Task
-Given the user's request, their image analysis (if provided), and the catalog below, pick exactly 3 items
-that best match their vibe and need. Reason carefully — consider occasion, body proportions, color harmony,
-and aesthetic coherence.
+Given the user's request, their image analysis (if provided), their purchase history (if provided),
+and the catalog below, pick exactly 3 items that best match their vibe and need.
+
+If purchase history is provided, use it to:
+- Infer the user's sizing from past purchases
+- Understand their budget range and avoid recommending far outside it
+- Note brand preferences and lean into or deliberately expand them
+- Ground your justifications in concrete references to their past taste
+
+Reason carefully — consider occasion, body proportions, color harmony, and aesthetic coherence.
 
 ## Output Format
 Return a single JSON object with this exact shape:
@@ -63,9 +70,10 @@ async def get_picks(
     user_request: str | None,
     parsed_image: dict | None,
     catalog: list[dict],
+    purchase_history: dict | None = None,
 ) -> dict:
     """
-    Call K2 Think V2 with user context + catalog.
+    Call K2 Think V2 with user context + catalog + optional purchase history.
     Returns { picks: [...], aura_script: "..." }
     """
     user_message_parts: list[str] = []
@@ -76,6 +84,11 @@ async def get_picks(
     if parsed_image:
         user_message_parts.append(
             f"IMAGE ANALYSIS:\n{json.dumps(parsed_image, indent=2)}"
+        )
+
+    if purchase_history and "note" not in purchase_history:
+        user_message_parts.append(
+            f"PURCHASE HISTORY (use to personalise picks):\n{json.dumps(purchase_history, indent=2)}"
         )
 
     user_message_parts.append(
