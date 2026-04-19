@@ -118,7 +118,7 @@ const Results = ({ data, onBack }) => {
             style={{
               position: "absolute",
               top: "200px",
-              left: "780px",
+              left: "800px",
               width: "375px",
               height: "570px",
               zIndex: 10,
