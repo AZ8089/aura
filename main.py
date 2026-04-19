@@ -1,8 +1,11 @@
+import asyncio
+import json as _json
 import os
+import uuid
 from pathlib import Path
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from catalog.hardcoded import CATALOG
@@ -11,8 +14,8 @@ from knot._client import create_session
 from knot.agentic_shopping import purchase_picks
 from knot.sub_manager import cancel_subscription, get_active_subscriptions
 from knot.transaction_link import get_purchase_history
-from reasoning.k2_stylist import get_picks
 from config import TO_REVIEW
+from logger import LOG_FILE, log_chat_start
 from reasoning.k2_stylist import get_picks, get_final_picks
 from reviews.review_crawler import crawl_products_parallel
 from reviews.sizing_analyzer import analyze_sizing_parallel
@@ -24,6 +27,7 @@ from vision.gemini_parser import parse_image
 app = FastAPI(title="Aura API")
 
 STATIC_DIR = Path(__file__).parent / "static"
+DASHBOARD_DIR = Path(__file__).parent / "dashboard"
 AUDIO_OUTPUT_DIR = Path(os.environ.get("AUDIO_OUTPUT_DIR", "/tmp/aura_audio"))
 AUDIO_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -105,6 +109,9 @@ async def chat(
         active_subscriptions: [ { id, name, monthly_cost_usd, is_cancellable } ] | null,
       }
     """
+    session_id = str(uuid.uuid4())
+    log_chat_start(session_id)
+
     transcript: str | None = None
     parsed_image: dict | None = None
     purchase_history: dict | None = None
@@ -132,13 +139,6 @@ async def chat(
         purchase_history = await get_purchase_history(knot_token)
         print(f"[main] purchase_history keys: {list(purchase_history.keys())}")
 
-    # ── Reasoning ─────────────────────────────────────────────────────────────
-    result = await get_picks(
-        user_request=user_request or None,
-        parsed_image=parsed_image,
-        catalog=CATALOG,
-        purchase_history=purchase_history,
-    )
     # ── Live catalog via Firecrawl ────────────────────────────────────────────
     search_ctx = await build_search_context(user_request or None, parsed_image, max_budget=max_budget)
     catalog = await get_products(search_ctx)
@@ -148,6 +148,7 @@ async def chat(
         user_request=user_request or None,
         parsed_image=parsed_image,
         catalog=catalog,
+        purchase_history=purchase_history,
     )
     # initial_result = { "picks": [...], "aura_script": "..." }
 
@@ -251,12 +252,78 @@ async def chat(
     return JSONResponse({
         "picks": enriched_picks,
         "audio_url": audio_url,
+        "aura_script": final_result.get("aura_script", ""),
         "purchase_status": purchase_status,
         "active_subscriptions": active_subscriptions,
     })
 
 
 # ── /cancel-subscription endpoint ────────────────────────────────────────────
+
+# ── Intelligence Dashboard ───────────────────────────────────────────
+
+@app.get("/dashboard")
+async def dashboard():
+    return FileResponse(DASHBOARD_DIR / "index.html")
+
+
+@app.get("/logs/sessions")
+async def get_log_sessions():
+    """Parse aura.log grouped by chat_start session boundaries."""
+    sessions: list[dict] = []
+    current: dict | None = None
+    try:
+        with open(LOG_FILE, "r", encoding="utf-8") as f:
+            for raw in f:
+                raw = raw.strip()
+                if not raw:
+                    continue
+                try:
+                    event = _json.loads(raw)
+                except Exception:
+                    continue
+                if event.get("event") == "chat_start":
+                    if current:
+                        sessions.append(current)
+                    current = {
+                        "session_id": event.get("session_id", "unknown"),
+                        "ts": event.get("ts"),
+                        "events": [event],
+                    }
+                elif current is not None:
+                    current["events"].append(event)
+    except FileNotFoundError:
+        pass
+    if current:
+        sessions.append(current)
+    sessions.reverse()  # most recent first
+    return JSONResponse(sessions)
+
+
+@app.get("/logs/stream")
+async def log_stream(request: Request):
+    """SSE endpoint — tail-follows aura.log and pushes new NDJSON lines in real time."""
+    async def generate():
+        try:
+            with open(LOG_FILE, "r", encoding="utf-8") as f:
+                f.seek(0, 2)  # start at end of file
+                while True:
+                    if await request.is_disconnected():
+                        break
+                    line = f.readline()
+                    if line and line.strip():
+                        yield f"data: {line.strip()}\n\n"
+                    else:
+                        await asyncio.sleep(0.25)
+        except FileNotFoundError:
+            yield 'data: {"event": "error", "message": "log file not found"}\n\n'
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
 
 @app.delete("/cancel-subscription/{subscription_id}")
 async def cancel_sub(subscription_id: str, knot_token: str | None = Form(default=None)):

@@ -163,6 +163,28 @@ const Results = ({ data, onBack }) => {
           alt="notebook"
         />
 
+        {/* Product image — left page of the notebook */}
+        {pick?.image_url && (
+          <img
+            src={pick.image_url}
+            alt={pick.name}
+            style={{
+              position: "absolute",
+              top: "250px",
+              left: "355px",
+              width: "310px",
+              height: "380px",
+              objectFit: "cover",
+              borderRadius: "6px",
+              zIndex: 8,
+              transform: "rotate(-7deg)",
+              transformOrigin: "top left",
+              pointerEvents: "none",
+              boxShadow: "2px 4px 16px rgba(0,0,0,0.18)",
+            }}
+          />
+        )}
+
         {/* Notebook content — overlaid on the right page of the notebook PNG.
             Adjust top/left/width/height to match the right-page area in notebook.png. */}
         {pick && (
@@ -171,7 +193,7 @@ const Results = ({ data, onBack }) => {
             style={{
               position: "absolute",
               top: "200px",
-              left: "780px",
+              left: "800px",
               width: "375px",
               height: "570px",
               zIndex: 10,
