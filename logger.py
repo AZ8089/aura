@@ -19,6 +19,13 @@ def _write(entry: dict) -> None:
         f.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
 
+def log_chat_start(session_id: str) -> None:
+    _write({
+        "event": "chat_start",
+        "session_id": session_id,
+    })
+
+
 def log_gemini_request(image_size_bytes: int, prompt: str) -> None:
     _write({
         "event": "gemini_request",
