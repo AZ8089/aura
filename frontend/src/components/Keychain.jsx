@@ -3,6 +3,7 @@ import { useGLTF, Float, PresentationControls, Environment } from '@react-three/
 import { Suspense } from 'react';
 
 function Model() {
+  // credit: "Hello Kitty Keychain 3D Model" (https://skfb.ly/pC8JP) by Gothic_404 is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/). 
   const { scene } = useGLTF('/hello_kitty_keychain_3d_model.glb');
   // Ensure materials are visible and reflective
   scene.traverse((child) => {
